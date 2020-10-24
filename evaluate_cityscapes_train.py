@@ -22,23 +22,22 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import yaml
 import time
-import swa_utils
 
 torch.backends.cudnn.benchmark=True
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 DATA_DIRECTORY = './data/Cityscapes/data'
-DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'
+DATA_LIST_PATH = './dataset/cityscapes_list/train.txt'
 SAVE_PATH = './result/cityscapes'
 
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
-NUM_STEPS = 500 # Number of images in the validation set.
+NUM_STEPS = 2975 # Number of images in the train set.
 RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_multi-ed35151c.pth'
 RESTORE_FROM_VGG = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_vgg-ac4ac9f6.pth'
 RESTORE_FROM_ORC = 'http://vllab1.ucmerced.edu/~whung/adaptSeg/cityscapes_oracle-b7b9934.pth'
-SET = 'val'
+SET = 'train'
 
 MODEL = 'DeeplabMulti'
 
@@ -84,7 +83,6 @@ def get_arguments():
                         help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
-    parser.add_argument("--update_bn", action='store_true', help='update batchnorm')
     return parser.parse_args()
 
 def save(output_name):
@@ -171,8 +169,6 @@ def main():
     testloader3 = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(round(512*scale), round(1024*scale) ), resize_size=( round(1024*scale), round(512*scale)), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
-    if args.update_bn:
-        swa_utils.update_bn(testloader, model, device='cuda')
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
@@ -191,32 +187,30 @@ def main():
 
         inputs = image.cuda()
         inputs2 = image2.cuda()
-        alpha = 1.0
-        beta = 0.5
         #inputs3 = Variable(image3).cuda()
         print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
         if args.model == 'DeepLab':
             with torch.no_grad():
                 output1, output2 = model(inputs)
-                output_batch = interp(sm(beta* output1 + alpha * output2))
+                output_batch = interp(sm(0.5* output1 + output2))
                 heatmap_output1, heatmap_output2 = output1, output2
                 #output_batch = interp(sm(output1))
                 #output_batch = interp(sm(output2))
                 output1, output2 = model(fliplr(inputs))
                 output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(beta * output1 + alpha * output2))
+                output_batch += interp(sm(0.5 * output1 + output2))
                 heatmap_output1, heatmap_output2 = heatmap_output1+output1, heatmap_output2+output2
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs
 
                 output1, output2 = model(inputs2)
-                output_batch += interp(sm(beta * output1 + alpha * output2))
+                output_batch += interp(sm(0.5* output1 + output2))
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 output1, output2 = model(fliplr(inputs2))
                 output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(beta * output1 + alpha * output2))
+                output_batch += interp(sm(0.5 * output1 + output2))
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs2
@@ -263,4 +257,4 @@ if __name__ == '__main__':
     with torch.no_grad():
         save_path = main()
     print('Time used: {} sec'.format(time.time()-tt))
-    os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/val %s'%save_path)
+    os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/train %s'%save_path)

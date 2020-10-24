@@ -124,6 +124,9 @@ class AD_Trainer(nn.Module):
         self.lambda_adv_target1 = args.lambda_adv_target1
         self.lambda_adv_target2 = args.lambda_adv_target2
         self.class_w = torch.FloatTensor(self.num_classes).zero_().cuda() + 1
+        self.rkl = args.rkl
+        self.mse = args.mse
+
         if args.fp16:
             # Name the FP16_Optimizer instance to replace the existing optimizer
             assert torch.backends.cudnn.enabled, "fp16 mode requires cudnn backend to be enabled."
@@ -172,8 +175,14 @@ class AD_Trainer(nn.Module):
             #labels_onehot = torch.zeros(n, self.num_classes, h, w)
             #labels_onehot = labels_onehot.cuda()
             #labels_onehot.scatter_(1, labels.view(n,1,h,w), 1)
+            if self.rkl:
+                variance = torch.sum(kl_distance(self.log_sm(pred2),self.sm(pred1)), dim=1) 
+            elif self.mse: 
+                print('USING MSE')
+                variance = torch.sum((self.sm(pred2) - self.sm(pred1))**2, dim=1) 
+            else: # in the paper
+                variance = torch.sum(kl_distance(self.log_sm(pred1),self.sm(pred2)), dim=1) 
 
-            variance = torch.sum(kl_distance(self.log_sm(pred1),self.sm(pred2)), dim=1) 
             exp_variance = torch.exp(-variance)
             #variance = torch.log( 1 + (torch.mean((pred1-pred2)**2, dim=1)))
             #torch.mean( kl_distance(self.log_sm(pred1),pred2), dim=1) + 1e-6

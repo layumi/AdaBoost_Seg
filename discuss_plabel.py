@@ -1,10 +1,11 @@
-import argparse
+import argparse	
 import scipy
 from scipy import ndimage
 import numpy as np
 import sys
+import re
 from packaging import version
-from multiprocessing import Pool
+
 import torch
 from torch.autograd import Variable
 import torchvision.models as models
@@ -21,24 +22,26 @@ from utils.tool import fliplr
 import matplotlib.pyplot as plt
 import torch.nn as nn
 import yaml
-import time
-import swa_utils
 
 torch.backends.cudnn.benchmark=True
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 DATA_DIRECTORY = './data/Cityscapes/data'
-DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'
-SAVE_PATH = './result/cityscapes'
+DATA_LIST_PATH = './dataset/cityscapes_list/train.txt'
+SAVE_PATH = './data/Cityscapes/data/pseudo/train'
+
+if not os.path.isdir('./data/Cityscapes/data/pseudo/'):
+    os.mkdir('./data/Cityscapes/data/pseudo/')
+    os.mkdir(SAVE_PATH)
 
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
-NUM_STEPS = 500 # Number of images in the validation set.
+NUM_STEPS = 2975 # Number of images in the validation set.
 RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_multi-ed35151c.pth'
 RESTORE_FROM_VGG = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_vgg-ac4ac9f6.pth'
 RESTORE_FROM_ORC = 'http://vllab1.ucmerced.edu/~whung/adaptSeg/cityscapes_oracle-b7b9934.pth'
-SET = 'val'
+SET = 'train' # We generate pseudo label for training set
 
 MODEL = 'DeeplabMulti'
 
@@ -49,6 +52,20 @@ zero_pad = 256 * 3 - len(palette)
 for i in range(zero_pad):
     palette.append(0)
 
+def draw_hist(x, y, xx, yy, name = 'Var'):
+    fig = plt.figure()
+    bins = np.linspace(0, 1, 50)
+    x = x.flatten()
+    y = y.flatten()
+    xx = np.append(xx,x)
+    yy = np.append(yy,y)
+    print(len(xx))
+    #plt.hist(xx, bins, alpha=0.5, label='Positive')
+    plt.hist(yy, bins, alpha=0.5, label='Negative')
+    plt.legend(loc='upper right')
+    fig.savefig('%s_hist.png' % name)
+    plt.clf()
+    return xx, yy   
 
 def colorize_mask(mask):
     # mask: numpy array of the mask
@@ -78,46 +95,33 @@ def get_arguments():
                         help="Where restore model parameters from.")
     parser.add_argument("--gpu", type=int, default=0,
                         help="choose gpu device.")
-    parser.add_argument("--batchsize", type=int, default=16,
+    parser.add_argument("--batchsize", type=int, default=12,
                         help="choose gpu device.")
     parser.add_argument("--set", type=str, default=SET,
                         help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
-    parser.add_argument("--update_bn", action='store_true', help='update batchnorm')
     return parser.parse_args()
-
-def save(output_name):
-    output, name = output_name
-    output_col = colorize_mask(output)
-    output = Image.fromarray(output)
-
-    output.save('%s' % (name))
-    output_col.save('%s_color.png' % (name.split('.jpg')[0]))
-    return
 
 def save_heatmap(output_name):
     output, name = output_name
-    #output.save('%s_h.png' % (name))
     fig = plt.figure()
     plt.axis('off')
     heatmap = plt.imshow(output, cmap='viridis')
-    #fig.colorbar(heatmap)
+    fig.colorbar(heatmap)
     fig.savefig('%s_heatmap.png' % (name.split('.jpg')[0]))
-    return
-
-def save_scoremap(output_name):
-    output, name = output_name
-    #output.save('%s_s.png' % (name))
-    fig = plt.figure()
-    plt.axis('off')
-    heatmap = plt.imshow(output, cmap='viridis')
-    #fig.colorbar(heatmap)
-    fig.savefig('%s_scoremap.png' % (name.split('.jpg')[0]))
     return
 
 def main():
     """Create the model and start the evaluation process."""
+    x0 = []
+    y0 = []
+    x1 = []
+    y1 = []
+    count = 0
+    right_var = 0
+    wrong_var = 0
+
     args = get_arguments()
 
     config_path = os.path.join(os.path.dirname(args.restore_from),'opts.yaml')
@@ -131,7 +135,7 @@ def main():
     batchsize = args.batchsize
 
     model_name = os.path.basename( os.path.dirname(args.restore_from) )
-    args.save += model_name
+    #args.save += model_name
 
     if not os.path.exists(args.save):
         os.makedirs(args.save)
@@ -157,7 +161,6 @@ def main():
     except:
         model = torch.nn.DataParallel(model)
         model.load_state_dict(saved_state_dict)
-    #model = torch.nn.DataParallel(model)
     model.eval()
     model.cuda(gpu0)
 
@@ -167,15 +170,13 @@ def main():
     scale = 1.25
     testloader2 = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(round(512*scale), round(1024*scale) ), resize_size=( round(1024*scale), round(512*scale)), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
-    scale = 0.9
-    testloader3 = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(round(512*scale), round(1024*scale) ), resize_size=( round(1024*scale), round(512*scale)), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
+
+
+    gtloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(65, 129), resize_size=(129, 65), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
-
-    if args.update_bn:
-        swa_utils.update_bn(testloader, model, device='cuda')
-
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
+        interp2 = nn.Upsample(size=(64, 128), mode='nearest')
     else:
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
 
@@ -183,84 +184,74 @@ def main():
     log_sm = torch.nn.LogSoftmax(dim = 1)
     kl_distance = nn.KLDivLoss( reduction = 'none')
 
-    for index, img_data in enumerate(zip(testloader, testloader2, testloader3) ):
-        batch, batch2, batch3 = img_data
+    for index, img_data in enumerate(zip(testloader, testloader2, gtloader) ):
+        batch, batch2, gt = img_data
         image, _, _, name = batch
         image2, _, _, name2 = batch2
-        #image3, _, _, name3 = batch3
+        _, gt_label, _, _ = gt
 
         inputs = image.cuda()
         inputs2 = image2.cuda()
-        alpha = 1.0
-        beta = 0.5
-        #inputs3 = Variable(image3).cuda()
-        print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
+        print('\r>>>>Extracting feature...%04d/%04d'%(index*batchsize, NUM_STEPS), end='')
         if args.model == 'DeepLab':
             with torch.no_grad():
                 output1, output2 = model(inputs)
-                output_batch = interp(sm(beta* output1 + alpha * output2))
-                heatmap_output1, heatmap_output2 = output1, output2
-                #output_batch = interp(sm(output1))
-                #output_batch = interp(sm(output2))
-                output1, output2 = model(fliplr(inputs))
-                output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(beta * output1 + alpha * output2))
-                heatmap_output1, heatmap_output2 = heatmap_output1+output1, heatmap_output2+output2
-                #output_batch += interp(sm(output1))
-                #output_batch += interp(sm(output2))
-                del output1, output2, inputs
+                output_batch = sm(0.5* output1 + output2)
+                print(output_batch.shape)
 
-                output1, output2 = model(inputs2)
-                output_batch += interp(sm(beta * output1 + alpha * output2))
-                #output_batch += interp(sm(output1))
-                #output_batch += interp(sm(output2))
-                output1, output2 = model(fliplr(inputs2))
-                output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(beta * output1 + alpha * output2))
-                #output_batch += interp(sm(output1))
-                #output_batch += interp(sm(output2))
-                del output1, output2, inputs2
-                output_batch = output_batch.cpu().data.numpy()
-                heatmap_batch = torch.sum(kl_distance(log_sm(heatmap_output1), sm(heatmap_output2)), dim=1) 
-                heatmap_batch = torch.log(1 + 10*heatmap_batch) # for visualization
-                heatmap_batch = heatmap_batch.cpu().data.numpy()
-
-                #output1, output2 = model(inputs3)
-                #output_batch += interp(sm(0.5* output1 + output2)).cpu().data.numpy()
-                #output1, output2 = model(fliplr(inputs3))
+                heatmap_batch = torch.sum(kl_distance(log_sm(output1), sm(output2)), dim=1)
+                heatmap_batch = torch.exp(-heatmap_batch) 
+                #output1, output2 = model(fliplr(inputs))
                 #output1, output2 = fliplr(output1), fliplr(output2)
-                #output_batch += interp(sm(0.5 * output1 + output2)).cpu().data.numpy()
-                #del output1, output2, inputs3
+                #output_batch += interp(sm(0.5 * output1 + output2))
+                #del output1, output2, inputs
+
+                #output1, output2 = model(inputs2)
+                #output_batch += interp(sm(0.5* output1 + output2))
+                #output1, output2 = model(fliplr(inputs2))
+                #output1, output2 = fliplr(output1), fliplr(output2)
+                #output_batch += interp(sm(0.5 * output1 + output2))
+                #del output1, output2, inputs2
+                output_batch = output_batch.cpu().data.numpy()
+                heatmap_batch = heatmap_batch.cpu().data.numpy()
         elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
             output_batch = model(Variable(image).cuda())
             output_batch = interp(output_batch).cpu().data.numpy()
 
+        #output_batch = output_batch.transpose(0,2,3,1)
+        #output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
         output_batch = output_batch.transpose(0,2,3,1)
-        scoremap_batch = np.asarray(np.max(output_batch, axis=3))
+        score_batch = np.max(output_batch, axis=3)
         output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
-        output_iterator = []
-        heatmap_iterator = []
-        scoremap_iterator = []
-
+        #output_batch[score_batch<3.2] = 255  #3.2 = 4*0.8
         for i in range(output_batch.shape[0]):
-            output_iterator.append(output_batch[i,:,:])
-            heatmap_iterator.append(heatmap_batch[i,:,:]/np.max(heatmap_batch[i,:,:]))
-            scoremap_iterator.append(1-scoremap_batch[i,:,:]/np.max(scoremap_batch[i,:,:]))
+            output = output_batch[i,:,:]
             name_tmp = name[i].split('/')[-1]
-            name[i] = '%s/%s' % (args.save, name_tmp)
-        with Pool(4) as p:
-            p.map(save, zip(output_iterator, name) )
-            p.map(save_heatmap, zip(heatmap_iterator, name) )
-            p.map(save_scoremap, zip(scoremap_iterator, name) )
+            dir_name = name[i].split('/')[-2]
+            save_path = args.save + '/' + dir_name
+            print('%s/%s' % (save_path, name_tmp))
 
-        del output_batch
-
-    
+            # resize to 64*128
+            variance_tmp = heatmap_batch[i,:,:]/np.max(heatmap_batch[i,:,:]) 
+            score_tmp = score_batch[i,:,:]/np.max(score_batch[i,:,:]) 
+            prediction = output
+            ground_truth = gt_label[i,:,:].numpy()
+            right_mask = prediction==ground_truth
+            ignore_mask = ground_truth==255
+            wrong_mask = np.logical_and( (~right_mask), (~ignore_mask))
+            # Use High-confidence or not
+            #high_mask = score_tmp > 0.95
+            #wrong_mask = np.logical_and( wrong_mask, high_mask)
+            #right_mask = np.logical_and( right_mask, high_mask)
+            right_var += np.mean( variance_tmp[right_mask]) 
+            wrong_var += np.mean( variance_tmp[wrong_mask]) 
+            count += 1 
+            print( right_var/count, wrong_var/count) 
+            x0, y0 = draw_hist(variance_tmp[right_mask],variance_tmp[wrong_mask], x0, y0, name='Var')
+            #x1, y1 = draw_hist(score_tmp[right_mask],score_tmp[wrong_mask], x1, y1, name='Bias')
     return args.save
 
 if __name__ == '__main__':
-    tt = time.time()
     with torch.no_grad():
         save_path = main()
-    print('Time used: {} sec'.format(time.time()-tt))
-    os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/val %s'%save_path)
+    #os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/train %s'%save_path)
