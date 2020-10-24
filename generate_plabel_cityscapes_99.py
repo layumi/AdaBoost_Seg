@@ -29,10 +29,10 @@ IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 DATA_DIRECTORY = './data/Cityscapes/data'
 DATA_LIST_PATH = './dataset/cityscapes_list/train.txt'
-SAVE_PATH = './data/Cityscapes/data/pseudo/train'
+SAVE_PATH = './data/Cityscapes/data/pseudo_9.5/train'
 
-if not os.path.isdir('./data/Cityscapes/data/pseudo/'):
-    os.mkdir('./data/Cityscapes/data/pseudo/')
+if not os.path.isdir('./data/Cityscapes/data/pseudo_9.5/'):
+    os.mkdir('./data/Cityscapes/data/pseudo_9.5/')
     os.mkdir(SAVE_PATH)
 
 IGNORE_LABEL = 255
@@ -198,7 +198,7 @@ def main():
         output_batch = output_batch.transpose(0,2,3,1)
         score_batch = np.max(output_batch, axis=3)
         output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
-        #output_batch[score_batch<3.2] = 255  #3.2 = 4*0.8
+        output_batch[score_batch< 4*0.95] = 255  #3.2 = 4*0.8
         for i in range(output_batch.shape[0]):
             output = output_batch[i,:,:]
             output_col = colorize_mask(output)

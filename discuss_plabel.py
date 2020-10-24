@@ -1,4 +1,4 @@
-import argparse
+import argparse	
 import scipy
 from scipy import ndimage
 import numpy as np
@@ -52,6 +52,20 @@ zero_pad = 256 * 3 - len(palette)
 for i in range(zero_pad):
     palette.append(0)
 
+def draw_hist(x, y, xx, yy, name = 'Var'):
+    fig = plt.figure()
+    bins = np.linspace(0, 1, 50)
+    x = x.flatten()
+    y = y.flatten()
+    xx = np.append(xx,x)
+    yy = np.append(yy,y)
+    print(len(xx))
+    #plt.hist(xx, bins, alpha=0.5, label='Positive')
+    plt.hist(yy, bins, alpha=0.5, label='Negative')
+    plt.legend(loc='upper right')
+    fig.savefig('%s_hist.png' % name)
+    plt.clf()
+    return xx, yy   
 
 def colorize_mask(mask):
     # mask: numpy array of the mask
@@ -100,6 +114,13 @@ def save_heatmap(output_name):
 
 def main():
     """Create the model and start the evaluation process."""
+    x0 = []
+    y0 = []
+    x1 = []
+    y1 = []
+    count = 0
+    right_var = 0
+    wrong_var = 0
 
     args = get_arguments()
 
@@ -151,8 +172,11 @@ def main():
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
 
+    gtloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(65, 129), resize_size=(129, 65), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
+                                    batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
+        interp2 = nn.Upsample(size=(64, 128), mode='nearest')
     else:
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
 
@@ -160,11 +184,11 @@ def main():
     log_sm = torch.nn.LogSoftmax(dim = 1)
     kl_distance = nn.KLDivLoss( reduction = 'none')
 
-    for index, img_data in enumerate(zip(testloader, testloader2) ):
-        batch, batch2 = img_data
+    for index, img_data in enumerate(zip(testloader, testloader2, gtloader) ):
+        batch, batch2, gt = img_data
         image, _, _, name = batch
         image2, _, _, name2 = batch2
-        print(image.shape)
+        _, gt_label, _, _ = gt
 
         inputs = image.cuda()
         inputs2 = image2.cuda()
@@ -172,21 +196,22 @@ def main():
         if args.model == 'DeepLab':
             with torch.no_grad():
                 output1, output2 = model(inputs)
-                output_batch = interp(sm(0.5* output1 + output2))
+                output_batch = sm(0.5* output1 + output2)
+                print(output_batch.shape)
 
                 heatmap_batch = torch.sum(kl_distance(log_sm(output1), sm(output2)), dim=1)
+                heatmap_batch = torch.exp(-heatmap_batch) 
+                #output1, output2 = model(fliplr(inputs))
+                #output1, output2 = fliplr(output1), fliplr(output2)
+                #output_batch += interp(sm(0.5 * output1 + output2))
+                #del output1, output2, inputs
 
-                output1, output2 = model(fliplr(inputs))
-                output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(0.5 * output1 + output2))
-                del output1, output2, inputs
-
-                output1, output2 = model(inputs2)
-                output_batch += interp(sm(0.5* output1 + output2))
-                output1, output2 = model(fliplr(inputs2))
-                output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(0.5 * output1 + output2))
-                del output1, output2, inputs2
+                #output1, output2 = model(inputs2)
+                #output_batch += interp(sm(0.5* output1 + output2))
+                #output1, output2 = model(fliplr(inputs2))
+                #output1, output2 = fliplr(output1), fliplr(output2)
+                #output_batch += interp(sm(0.5 * output1 + output2))
+                #del output1, output2, inputs2
                 output_batch = output_batch.cpu().data.numpy()
                 heatmap_batch = heatmap_batch.cpu().data.numpy()
         elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
@@ -201,27 +226,29 @@ def main():
         #output_batch[score_batch<3.2] = 255  #3.2 = 4*0.8
         for i in range(output_batch.shape[0]):
             output = output_batch[i,:,:]
-            output_col = colorize_mask(output)
-            output = Image.fromarray(output)
-
             name_tmp = name[i].split('/')[-1]
             dir_name = name[i].split('/')[-2]
             save_path = args.save + '/' + dir_name
-            #save_path = re.replace(save_path, 'leftImg8bit', 'pseudo')
-            #print(save_path)
-            if not os.path.isdir(save_path):
-                os.mkdir(save_path)
-            output.save('%s/%s' % (save_path, name_tmp))
             print('%s/%s' % (save_path, name_tmp))
-            output_col.save('%s/%s_color.png' % (save_path, name_tmp.split('.')[0]))
 
-            heatmap_tmp = heatmap_batch[i,:,:]/np.max(heatmap_batch[i,:,:])
-            fig = plt.figure()
-            plt.axis('off')
-            heatmap = plt.imshow(heatmap_tmp, cmap='viridis')
-            fig.colorbar(heatmap)
-            fig.savefig('%s/%s_heatmap.png' % (save_path, name_tmp.split('.')[0]))
-            
+            # resize to 64*128
+            variance_tmp = heatmap_batch[i,:,:]/np.max(heatmap_batch[i,:,:]) 
+            score_tmp = score_batch[i,:,:]/np.max(score_batch[i,:,:]) 
+            prediction = output
+            ground_truth = gt_label[i,:,:].numpy()
+            right_mask = prediction==ground_truth
+            ignore_mask = ground_truth==255
+            wrong_mask = np.logical_and( (~right_mask), (~ignore_mask))
+            # Use High-confidence or not
+            #high_mask = score_tmp > 0.95
+            #wrong_mask = np.logical_and( wrong_mask, high_mask)
+            #right_mask = np.logical_and( right_mask, high_mask)
+            right_var += np.mean( variance_tmp[right_mask]) 
+            wrong_var += np.mean( variance_tmp[wrong_mask]) 
+            count += 1 
+            print( right_var/count, wrong_var/count) 
+            x0, y0 = draw_hist(variance_tmp[right_mask],variance_tmp[wrong_mask], x0, y0, name='Var')
+            #x1, y1 = draw_hist(score_tmp[right_mask],score_tmp[wrong_mask], x1, y1, name='Bias')
     return args.save
 
 if __name__ == '__main__':

@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import yaml
 import time
+import swa_utils
 
 torch.backends.cudnn.benchmark=True
 
@@ -83,6 +84,7 @@ def get_arguments():
                         help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
+    parser.add_argument("--update_bn", action='store_true', help='update batchnorm')
     return parser.parse_args()
 
 def save(output_name):
@@ -94,6 +96,25 @@ def save(output_name):
     output_col.save('%s_color.png' % (name.split('.jpg')[0]))
     return
 
+def save_heatmap(output_name):
+    output, name = output_name
+    #output.save('%s_h.png' % (name))
+    fig = plt.figure()
+    plt.axis('off')
+    heatmap = plt.imshow(output, cmap='viridis')
+    #fig.colorbar(heatmap)
+    fig.savefig('%s_heatmap.png' % (name.split('.jpg')[0]))
+    return
+
+def save_scoremap(output_name):
+    output, name = output_name
+    #output.save('%s_s.png' % (name))
+    fig = plt.figure()
+    plt.axis('off')
+    heatmap = plt.imshow(output, cmap='viridis')
+    #fig.colorbar(heatmap)
+    fig.savefig('%s_scoremap.png' % (name.split('.jpg')[0]))
+    return
 
 def main():
     """Create the model and start the evaluation process."""
@@ -150,6 +171,8 @@ def main():
     testloader3 = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(round(512*scale), round(1024*scale) ), resize_size=( round(1024*scale), round(512*scale)), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
+    if args.update_bn:
+        swa_utils.update_bn(testloader, model, device='cuda')
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
@@ -157,6 +180,9 @@ def main():
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
 
     sm = torch.nn.Softmax(dim = 1)
+    log_sm = torch.nn.LogSoftmax(dim = 1)
+    kl_distance = nn.KLDivLoss( reduction = 'none')
+
     for index, img_data in enumerate(zip(testloader, testloader2, testloader3) ):
         batch, batch2, batch3 = img_data
         image, _, _, name = batch
@@ -165,32 +191,39 @@ def main():
 
         inputs = image.cuda()
         inputs2 = image2.cuda()
+        alpha = 1.0
+        beta = 0.5
         #inputs3 = Variable(image3).cuda()
         print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
         if args.model == 'DeepLab':
             with torch.no_grad():
                 output1, output2 = model(inputs)
-                output_batch = interp(sm(0.5* output1 + output2))
+                output_batch = interp(sm(beta* output1 + alpha * output2))
+                heatmap_output1, heatmap_output2 = output1, output2
                 #output_batch = interp(sm(output1))
                 #output_batch = interp(sm(output2))
                 output1, output2 = model(fliplr(inputs))
                 output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(0.5 * output1 + output2))
+                output_batch += interp(sm(beta * output1 + alpha * output2))
+                heatmap_output1, heatmap_output2 = heatmap_output1+output1, heatmap_output2+output2
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs
 
                 output1, output2 = model(inputs2)
-                output_batch += interp(sm(0.5* output1 + output2))
+                output_batch += interp(sm(beta * output1 + alpha * output2))
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 output1, output2 = model(fliplr(inputs2))
                 output1, output2 = fliplr(output1), fliplr(output2)
-                output_batch += interp(sm(0.5 * output1 + output2))
+                output_batch += interp(sm(beta * output1 + alpha * output2))
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs2
                 output_batch = output_batch.cpu().data.numpy()
+                heatmap_batch = torch.sum(kl_distance(log_sm(heatmap_output1), sm(heatmap_output2)), dim=1) 
+                heatmap_batch = torch.log(1 + 10*heatmap_batch) # for visualization
+                heatmap_batch = heatmap_batch.cpu().data.numpy()
 
                 #output1, output2 = model(inputs3)
                 #output_batch += interp(sm(0.5* output1 + output2)).cpu().data.numpy()
@@ -203,14 +236,23 @@ def main():
             output_batch = interp(output_batch).cpu().data.numpy()
 
         output_batch = output_batch.transpose(0,2,3,1)
+        scoremap_batch = np.asarray(np.max(output_batch, axis=3))
         output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
         output_iterator = []
+        heatmap_iterator = []
+        scoremap_iterator = []
+
         for i in range(output_batch.shape[0]):
             output_iterator.append(output_batch[i,:,:])
+            heatmap_iterator.append(heatmap_batch[i,:,:]/np.max(heatmap_batch[i,:,:]))
+            scoremap_iterator.append(1-scoremap_batch[i,:,:]/np.max(scoremap_batch[i,:,:]))
             name_tmp = name[i].split('/')[-1]
             name[i] = '%s/%s' % (args.save, name_tmp)
         with Pool(4) as p:
             p.map(save, zip(output_iterator, name) )
+            p.map(save_heatmap, zip(heatmap_iterator, name) )
+            p.map(save_scoremap, zip(scoremap_iterator, name) )
+
         del output_batch
 
     
