@@ -30,6 +30,7 @@ IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 DATA_DIRECTORY = './data/Cityscapes/data'
 DATA_LIST_PATH = './dataset/cityscapes_list/val.txt'
+TRAIN_DATA_LIST_PATH = './dataset/cityscapes_list/train.txt'
 SAVE_PATH = './result/cityscapes'
 
 IGNORE_LABEL = 255
@@ -70,6 +71,8 @@ def get_arguments():
                         help="Path to the directory containing the Cityscapes dataset.")
     parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH,
                         help="Path to the file listing the images in the dataset.")
+    parser.add_argument("--train-data-list", type=str, default=TRAIN_DATA_LIST_PATH,
+                        help="Path to the train file listing the images in the dataset.")
     parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL,
                         help="The index of the label to ignore during the training.")
     parser.add_argument("--num-classes", type=int, default=NUM_CLASSES,
@@ -172,7 +175,10 @@ def main():
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
     if args.update_bn:
-        swa_utils.update_bn(testloader, model, device='cuda')
+        trainloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.train_data_list, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
+        print('update bn on training images')
+        swa_utils.update_bn(trainloader, model, device='cuda')
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
