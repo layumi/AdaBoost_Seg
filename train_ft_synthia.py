@@ -15,6 +15,7 @@ import os.path as osp
 import random
 import time
 import yaml
+import swa_utils
 from tensorboardX import SummaryWriter
 
 from trainer_ms_variance import AD_Trainer
@@ -158,6 +159,8 @@ def get_arguments():
                         help="Regularisation parameter for L2-loss.")
     parser.add_argument("--warm-up", type=float, default=WARM_UP, help = 'warm up iteration')
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
+    parser.add_argument("--swa", action='store_true', help="using moving average.")
+    parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
     parser.add_argument("--only-hard-label",type=float, default=0,  
@@ -250,6 +253,8 @@ def main():
 
         writer = SummaryWriter(args.log_dir)
 
+    swa_flag = args.swa
+    swa_start = args.swa_start
     for i_iter in range(args.num_steps):
 
         loss_seg_value1 = 0
@@ -260,6 +265,12 @@ def main():
         loss_adv_target_value2 = 0
         loss_D_value2 = 0
 
+        # moving average
+        if args.swa and swa_flag and i_iter >= swa_start:
+            swa_flag = False
+            swa_model = swa_utils.AveragedModel(Trainer.G)
+            print('start weight avg. Update Batchnorm. Taking a while')
+            swa_utils.update_bn(targetloader, swa_model, device ='cuda' )
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         #adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
@@ -344,6 +355,11 @@ def main():
             torch.save(Trainer.G.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
             torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
+            # update model every 5000 iteration, saving moving average model
+            if args.swa:
+                swa_model.update_parameters(Trainer.G)
+                swa_utils.update_bn( targetloader, swa_model, device = 'cuda')
+                torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
 
     if args.tensorboard:
         writer.close()
