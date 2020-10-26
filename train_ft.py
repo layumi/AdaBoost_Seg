@@ -227,8 +227,9 @@ def main():
 
     print(Trainer)
 
+    # remove max_iters
     trainloader = data.DataLoader(
-        cityscapes_pseudo_DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
+        cityscapes_pseudo_DataSet(args.data_dir, args.data_list, max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, 
@@ -238,14 +239,12 @@ def main():
     trainloader_iter = enumerate(trainloader)
 
     targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
-                                                     max_iters=args.num_steps * args.iter_size * args.batch_size,
                                                      resize_size=args.input_size_target,
                                                      crop_size=args.crop_size,
                                                      scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
                                                      set=args.set, autoaug = args.autoaug_target),
                                    batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                                    pin_memory=True, drop_last=True)
-
 
     targetloader_iter = enumerate(targetloader)
 
@@ -274,7 +273,7 @@ def main():
             swa_flag = False
             swa_model = swa_utils.AveragedModel(Trainer.G)
             print('start weight avg. Update Batchnorm. Taking a while')
-            #swa_utils.update_bn(targetloader, swa_model, device ='cuda' )
+            swa_utils.update_bn(targetloader, swa_model, device ='cuda' )
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         #adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
@@ -285,9 +284,18 @@ def main():
             # train G
 
             # train with source
+            # Here I change the iterator with restart
+            try:
+                _, batch = trainloader_iter.__next__()
+            except: 
+                trainloader_iter = enumerate(trainloader)
+                _, batch = trainloader_iter.__next__()
 
-            _, batch = trainloader_iter.__next__()
-            _, batch_t = targetloader_iter.__next__()
+            try:
+                _, batch_t = targetloader_iter.__next__()
+            except: 
+                targetloader_iter = enumerate(targetloader)
+                _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
             images = images.cuda()
@@ -353,7 +361,7 @@ def main():
             # update model every 5000 iteration, saving moving average model
             if args.swa: 
                 swa_model.update_parameters(Trainer.G)
-                #swa_utils.update_bn( targetloader, swa_model, device = 'cuda')
+                swa_utils.update_bn( targetloader, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
 
     if args.tensorboard:

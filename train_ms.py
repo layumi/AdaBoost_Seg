@@ -221,7 +221,7 @@ def main():
     print(Trainer)
 
     trainloader = data.DataLoader(
-        GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
+        GTA5DataSet(args.data_dir, args.data_list, max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug),
@@ -230,7 +230,7 @@ def main():
     trainloader_iter = enumerate(trainloader)
 
     targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
-                                                     max_iters=args.num_steps * args.iter_size * args.batch_size,
+                                                     max_iters=None,
                                                      resize_size=args.input_size_target,
                                                      crop_size=args.crop_size,
                                                      scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
@@ -270,8 +270,18 @@ def main():
 
             # train with source
 
-            _, batch = trainloader_iter.__next__()
-            _, batch_t = targetloader_iter.__next__()
+            # Here I change the iterator with restart
+            try:
+                _, batch = trainloader_iter.__next__()
+            except:
+                trainloader_iter = enumerate(trainloader)
+                _, batch = trainloader_iter.__next__()
+
+            try:
+                _, batch_t = targetloader_iter.__next__()
+            except:
+                targetloader_iter = enumerate(targetloader)
+                _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
             images = images.cuda()
