@@ -228,24 +228,25 @@ def main():
     print(Trainer)
 
     # remove max_iters
-    trainloader = data.DataLoader(
-        cityscapes_pseudo_DataSet(args.data_dir, args.data_list, max_iters=None,
+    train_dataset = cityscapes_pseudo_DataSet(args.data_dir, args.data_list, max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, 
-                    set='train', autoaug = args.autoaug, threshold = args.threshold),
-        batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
-
+                    set='train', autoaug = args.autoaug, threshold = args.threshold)
+    train_number = len(train_dataset.img_ids)
+    trainloader = data.DataLoader(train_dataset,
+                    batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     trainloader_iter = enumerate(trainloader)
 
-    targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
-                                                     resize_size=args.input_size_target,
-                                                     crop_size=args.crop_size,
-                                                     scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
-                                                     set=args.set, autoaug = args.autoaug_target),
-                                   batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
-                                   pin_memory=True, drop_last=True)
-
+    target_dataset = cityscapesDataSet(args.data_dir_target, args.data_list_target,
+                     resize_size=args.input_size_target,
+                     crop_size=args.crop_size,
+                     scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
+                     set=args.set, autoaug = args.autoaug_target)
+    target_number = len(target_dataset.img_ids)
+    print(target_number)
+    targetloader = data.DataLoader(target_dataset,
+                    batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,pin_memory=True, drop_last=True)
     targetloader_iter = enumerate(targetloader)
 
     # set up tensor board
@@ -340,6 +341,7 @@ def main():
                     writer.add_scalar(key, val, i_iter)
 
         print('exp = {}'.format(args.snapshot_dir))
+        print('epoch = %d'% (i_iter* args.batch_size//target_number))
         print(
         '\033[1m iter = %8d/%8d \033[0m loss_seg1 = %.3f loss_seg2 = %.3f loss_me = %.3f  loss_kl = %.3f loss_adv1 = %.3f, loss_adv2 = %.3f loss_D1 = %.3f loss_D2 = %.3f, val_loss=%.3f'%(i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_me_value, loss_kl, loss_adv_target_value1, loss_adv_target_value2, loss_D_value1, loss_D_value2, val_loss))
 
