@@ -166,6 +166,7 @@ def get_arguments():
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
+    parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
     parser.add_argument("--often-balance", action='store_true', help="balance the apperance times.")
     parser.add_argument("--gpu-ids", type=str, default='0', help = 'choose gpus')
@@ -223,26 +224,31 @@ def main():
 
     print(Trainer)
 
-    trainloader = data.DataLoader(
-        GTA5DataSet(args.data_dir, args.data_list, max_iters=None,
+    train_dataset = GTA5DataSet(args.data_dir, args.data_list, max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
-                    scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug),
+                    scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug)
+    train_number = len(train_dataset.img_ids)
+    trainloader = data.DataLoader(train_dataset,
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
-
     trainloader_iter = enumerate(trainloader)
 
-    targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
+    target_dataset = cityscapesDataSet(args.data_dir_target, args.data_list_target,
                                                      max_iters=None,
                                                      resize_size=args.input_size_target,
                                                      crop_size=args.crop_size,
                                                      scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
-                                                     set=args.set, autoaug = args.autoaug_target),
+                                                     set=args.set, autoaug = args.autoaug_target)
+    target_number = len(target_dataset.img_ids)
+    print(target_number)
+    targetloader = data.DataLoader(target_dataset,
                                    batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                                    pin_memory=True, drop_last=True)
 
-
     targetloader_iter = enumerate(targetloader)
+
+    targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
 
     # set up tensor board
     if args.tensorboard:
@@ -269,7 +275,8 @@ def main():
             swa_flag = False
             swa_model = swa_utils.AveragedModel(Trainer.G)
             print('start weight avg. Update Batchnorm. Taking a while')
-            swa_utils.update_bn(targetloader, swa_model, device ='cuda' )
+            with torch.no_grad():
+                swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
@@ -291,8 +298,18 @@ def main():
             try:
                 _, batch_t = targetloader_iter.__next__()
             except:
-                targetloader_iter = enumerate(targetloader)
-                _, batch_t = targetloader_iter.__next__()
+                if args.adaboost:
+                    with torch.no_grad():
+                        weights = Trainer.make_sample_weights(targetloader2, previous_weights)
+                    previous_weights = weights
+                    print(torch.sum(weights))
+                    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+                    AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                    targetloader_iter = enumerate(AD_targetloader)
+                    _, batch_t = targetloader_iter.__next__()
+                else:
+                    target_iter = enumerate(targetloader)
+                    _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
             images = images.cuda()
@@ -337,6 +354,7 @@ def main():
                     writer.add_scalar(key, val, i_iter)
 
         print('exp = {}'.format(args.snapshot_dir))
+        print('epoch = %d'% (i_iter* args.batch_size//target_number))
         print(
         '\033[1m iter = %8d/%8d \033[0m loss_seg1 = %.3f loss_seg2 = %.3f loss_me = %.3f  loss_kl = %.3f loss_adv1 = %.3f, loss_adv2 = %.3f loss_D1 = %.3f loss_D2 = %.3f, val_loss=%.3f'%(i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_me_value, loss_kl, loss_adv_target_value1, loss_adv_target_value2, loss_D_value1, loss_D_value2, val_loss))
 
@@ -358,7 +376,8 @@ def main():
             # update model every 5000 iteration, saving moving average model
             if args.swa:
                 swa_model.update_parameters(Trainer.G)
-                swa_utils.update_bn( targetloader, swa_model, device = 'cuda')
+                with torch.no_grad():
+                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
 
 

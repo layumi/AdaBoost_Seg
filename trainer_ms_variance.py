@@ -8,6 +8,7 @@ from model.ms_discriminator import MsImageDis
 import torch
 import torch.nn.init as init
 import copy
+import tqdm
 import numpy as np
 #fp16
 try:
@@ -193,6 +194,28 @@ class AD_Trainer(nn.Module):
             #loss = torch.mean(loss/variance) + torch.mean(variance)
             loss = torch.mean(loss*exp_variance) + torch.mean(variance)
             return loss
+
+    def make_sample_weights(self, imageloader, previous_weight = None):
+            print('update Adaboost Sampling')
+            sm = torch.nn.Softmax(dim = 0)
+            weight = torch.FloatTensor()
+            kl_distance = nn.KLDivLoss( reduction = 'none')
+            self.G.eval()
+            with tqdm.tqdm(imageloader, ascii=True) as tq:
+                for images, _, _, _ in tq: 
+                    pred1, pred2 = self.G(images)
+                    pred1 = self.interp(pred1)
+                    pred2 = self.interp(pred2)
+                    variance = torch.sum(kl_distance(self.log_sm(pred1),self.sm(pred2)), dim=1)
+                    mean_variance = torch.mean( torch.mean(variance, dim=2), dim=1)
+                    mean_variance = mean_variance.cpu()
+                    weight = torch.cat( (weight, mean_variance), dim = 0)
+            if previous_weight is not None: 
+                weight = (sm(weight) + previous_weight)*0.5
+            else:
+                weight = sm(weight)
+            self.G.train()
+            return weight
 
     def gen_update(self, images, images_t, labels, labels_t, i_iter):
             self.gen_opt.zero_grad()
