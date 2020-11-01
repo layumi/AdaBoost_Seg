@@ -377,7 +377,7 @@ def main():
             torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
-            if args.swa: 
+            if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
