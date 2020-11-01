@@ -294,25 +294,26 @@ def main():
             # Here I change the iterator with restart
             try:
                 _, batch = trainloader_iter.__next__()
-            except: 
-                trainloader_iter = enumerate(trainloader)
-                _, batch = trainloader_iter.__next__()
-
-            try:
-                _, batch_t = targetloader_iter.__next__()
-            except: 
+            except:
                 if args.adaboost:
+                    # since train and target are the same dir
                     with torch.no_grad():
                         weights = Trainer.make_sample_weights(targetloader2, previous_weights)
                     previous_weights = weights
                     print(torch.sum(weights))
                     sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
-                    AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
-                    targetloader_iter = enumerate(AD_targetloader)
-                    _, batch_t = targetloader_iter.__next__()
-                else:
-                    target_iter = enumerate(targetloader)
-                    _, batch_t = targetloader_iter.__next__()
+                    AD_trainloader = data.DataLoader(train_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                    trainloader_iter = enumerate(AD_trainloader)
+                    _, batch = trainloader_iter.__next__()
+                else: 
+                    trainloader_iter = enumerate(trainloader)
+                    _, batch = trainloader_iter.__next__()
+
+            try:
+                _, batch_t = targetloader_iter.__next__()
+            except: 
+                target_iter = enumerate(targetloader)
+                _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
             images = images.cuda()
@@ -337,7 +338,7 @@ def main():
                     loss_D_value1 = 0
                     loss_D_value2 = 0
 
-        del pred1, pred2, pred_target1, pred_target2
+        del pred1, pred2, pred_target1, pred_target2, images, labels, images_t, labels_t
 
         if args.tensorboard:
             scalar_info = {

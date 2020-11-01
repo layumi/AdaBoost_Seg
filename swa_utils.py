@@ -162,6 +162,8 @@ def update_bn(loader, model, device=None):
         #model(input)
         model(input)
 
+    del input
+
     for bn_module in momenta.keys():
         bn_module.momentum = momenta[bn_module]
     model.train(was_training)
