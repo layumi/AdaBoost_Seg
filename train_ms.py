@@ -247,6 +247,8 @@ def main():
                                    pin_memory=True, drop_last=True)
 
     targetloader_iter = enumerate(targetloader)
+    # init adaboost loader
+    AD_targetloader = targetloader
 
     targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
@@ -278,6 +280,7 @@ def main():
             print('start weight avg. Update Batchnorm. Taking a while')
             with torch.no_grad():
                 swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
+            swa_model.cpu()
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
@@ -300,17 +303,10 @@ def main():
                 _, batch_t = targetloader_iter.__next__()
             except:
                 if args.adaboost:
-                    with torch.no_grad():
-                        weights = Trainer.make_sample_weights(targetloader2, previous_weights)
-                    previous_weights = weights
-                    print(torch.sum(weights))
-                    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
-                    AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
                     targetloader_iter = enumerate(AD_targetloader)
-                    _, batch_t = targetloader_iter.__next__()
                 else:
                     targetloader_iter = enumerate(targetloader)
-                    _, batch_t = targetloader_iter.__next__()
+                _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
             images = images.cuda()
@@ -376,10 +372,21 @@ def main():
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
             if args.swa and i_iter >= swa_start:
+                swa_model.cuda()
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                swa_model.cpu()
+
+            if args.adaboost:
+                with torch.no_grad():
+                    weights = Trainer.make_sample_weights(targetloader2, previous_weights)
+                previous_weights = weights
+                print(torch.sum(weights))
+                sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+                AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                targetloader_iter = enumerate(AD_targetloader)
 
 
     if args.tensorboard:

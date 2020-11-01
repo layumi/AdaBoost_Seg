@@ -238,6 +238,8 @@ def main():
     trainloader = data.DataLoader(train_dataset,
                     batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     trainloader_iter = enumerate(trainloader)
+    # init adaboost loader
+    AD_trainloader = trainloader
 
     target_dataset = cityscapesDataSet(args.data_dir_target, args.data_list_target,
                      resize_size=args.input_size_target,
@@ -296,18 +298,10 @@ def main():
                 _, batch = trainloader_iter.__next__()
             except:
                 if args.adaboost:
-                    # since in the phase 2, target and train is from the same data.
-                    with torch.no_grad():
-                        weights = Trainer.make_sample_weights(targetloader2, previous_weights)
-                    previous_weights = weights
-                    print(torch.sum(weights))
-                    sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
-                    AD_trainloader = data.DataLoader(train_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
                     trainloader_iter = enumerate(AD_trainloader)
-                    _, batch = trainloader_iter.__next__()
-                else: 
+                else:
                     trainloader_iter = enumerate(trainloader)
-                    _, batch = trainloader_iter.__next__()
+                _, batch = trainloader_iter.__next__()
 
             try:
                 _, batch_t = targetloader_iter.__next__()
@@ -385,6 +379,16 @@ def main():
                     swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 swa_model.cpu()
+
+            if args.adaboost:
+                # since in the phase 2, target and train is from the same data.
+                with torch.no_grad():
+                    weights = Trainer.make_sample_weights(targetloader2, previous_weights)
+                previous_weights = weights
+                print(torch.sum(weights))
+                sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+                AD_trainloader = data.DataLoader(train_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                trainloader_iter = enumerate(AD_trainloader)
 
     if args.tensorboard:
         writer.close()
