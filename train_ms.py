@@ -309,7 +309,7 @@ def main():
                     targetloader_iter = enumerate(AD_targetloader)
                     _, batch_t = targetloader_iter.__next__()
                 else:
-                    target_iter = enumerate(targetloader)
+                    targetloader_iter = enumerate(targetloader)
                     _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch

@@ -281,7 +281,7 @@ def main():
             print('start weight avg. Update Batchnorm. Taking a while')
             with torch.no_grad():
                 swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
-
+            swa_model.cpu()
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         #adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
         #adjust_learning_rate_D(Trainer.dis2_opt, i_iter, args)
@@ -296,7 +296,7 @@ def main():
                 _, batch = trainloader_iter.__next__()
             except:
                 if args.adaboost:
-                    # since train and target are the same dir
+                    # since in the phase 2, target and train is from the same data.
                     with torch.no_grad():
                         weights = Trainer.make_sample_weights(targetloader2, previous_weights)
                     previous_weights = weights
@@ -312,7 +312,7 @@ def main():
             try:
                 _, batch_t = targetloader_iter.__next__()
             except: 
-                target_iter = enumerate(targetloader)
+                targetloader_iter = enumerate(targetloader)
                 _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
@@ -379,10 +379,12 @@ def main():
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
             if args.swa and i_iter >= swa_start:
+                swa_model.cuda()
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                swa_model.cpu()
 
     if args.tensorboard:
         writer.close()
