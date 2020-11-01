@@ -7,6 +7,7 @@ from model.discriminator import FCDiscriminator
 from model.ms_discriminator import MsImageDis
 import torch
 import torch.nn.init as init
+import tqdm
 import copy
 import numpy as np
 #fp16
