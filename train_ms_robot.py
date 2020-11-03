@@ -244,6 +244,9 @@ def main():
                             batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                                    pin_memory=True, drop_last=True)
     targetloader_iter = enumerate(targetloader)
+    # init adaboost loader
+    AD_targetloader = targetloader
+
     targetloader2 = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
 
@@ -294,7 +297,10 @@ def main():
             try:
                 _, batch_t = targetloader_iter.__next__()
             except:
-                targetloader_iter = enumerate(targetloader)
+                if args.adaboost:
+                    targetloader_iter = enumerate(AD_targetloader)
+                else:
+                    targetloader_iter = enumerate(targetloader)
                 _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
