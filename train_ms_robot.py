@@ -166,6 +166,7 @@ def get_arguments():
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
+    parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
     parser.add_argument("--often-balance", action='store_true', help="balance the apperance times.")
     parser.add_argument("--gpu-ids", type=str, default='0', help = 'choose gpus')
@@ -278,6 +279,8 @@ def main():
             print('start weight avg. Update Batchnorm. Taking a while')
             with torch.no_grad():
                 swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
+            Trainer.swa_model = swa_model
+            swa_model.cpu()
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
@@ -367,10 +370,24 @@ def main():
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
             if args.swa and i_iter >= swa_start:
+                swa_model.cuda()
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                Trainer.swa_model = swa_model
+                swa_model.cpu()
+
+            if args.adaboost:
+                swa_model.cuda()
+                with torch.no_grad():
+                    weights = Trainer.make_sample_weights(targetloader2, previous_weights)
+                previous_weights = weights
+                print(torch.sum(weights))
+                sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+                AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                targetloader_iter = enumerate(AD_targetloader)
+                swa_model.cpu()
 
     if args.tensorboard:
         writer.close()
