@@ -208,6 +208,7 @@ class AD_Trainer(nn.Module):
 
             with tqdm.tqdm(imageloader, ascii=True) as tq:
                 for images, _, _, _ in tq: 
+                    images = images.cuda()
                     pred1, pred2 = self.swa_model(images)
                     pred1 = self.interp(pred1)
                     pred2 = self.interp(pred2)
