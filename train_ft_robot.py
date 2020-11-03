@@ -245,6 +245,7 @@ def main():
                                                      set=args.set, autoaug = args.autoaug_target)
     target_number = len(target_dataset.img_ids)
     print(target_number)
+    previous_weights = torch.FloatTensor( [1/target_number]*target_number )
     targetloader = data.DataLoader(target_dataset,
                            batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                            pin_memory=True, drop_last=True)
