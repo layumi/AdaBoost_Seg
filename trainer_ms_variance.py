@@ -122,6 +122,7 @@ class AD_Trainer(nn.Module):
         self.max_value = args.max_value
         self.lambda_me_target = args.lambda_me_target
         self.lambda_kl_target = args.lambda_kl_target
+        self.lambda_long = args.lambda_long
         self.lambda_adv_target1 = args.lambda_adv_target1
         self.lambda_adv_target2 = args.lambda_adv_target2
         self.class_w = torch.FloatTensor(self.num_classes).zero_().cuda() + 1
@@ -263,9 +264,11 @@ class AD_Trainer(nn.Module):
             if i_iter < 15000:
                 self.lambda_kl_target_copy = 0
                 self.lambda_me_target_copy = 0
+                self.lambda_long_copy = 0
             else:
                 self.lambda_kl_target_copy = self.lambda_kl_target
                 self.lambda_me_target_copy = self.lambda_me_target
+                self.lambda_long_copy = self.lambda_long
 
             loss_me = 0.0
             if self.lambda_me_target_copy>0:
@@ -288,10 +291,10 @@ class AD_Trainer(nn.Module):
 
             # long consistency
             loss_long = 0.0
-            if self.lambda_long>0:
+            if self.lambda_long_copy>0:
                 n, c, h, w = pred_target1.shape
-                with torch.no_gard():
-                    pred_target1_swa, pred_swa = self.swa_model(images_t)
+                with torch.no_grad():
+                    pred_target1_swa, pred_target2_swa = self.swa_model(images_t)
                     pred_target1_swa = self.interp_target(pred_target1_swa)
                     pred_target2_swa = self.interp_target(pred_target2_swa)
                 mean_pred_swa = self.sm(0.5*pred_target1_swa + pred_target2_swa)
