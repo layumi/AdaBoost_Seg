@@ -122,7 +122,9 @@ def get_arguments():
     parser.add_argument("--lambda-me-target", type=float, default=LAMBDA_ME_TARGET,
                         help="lambda_me for minimize cross entropy loss on target.")
     parser.add_argument("--lambda-kl-target", type=float, default=LAMBDA_KL_TARGET,
-                        help="lambda_me for minimize kl loss on target.")
+                        help="lambda_kl for minimize kl loss on target.")
+    parser.add_argument("--lambda-long", type=float, default=0,
+                        help="lambda_long for minimize long-term consistency loss on target.")
     parser.add_argument("--momentum", type=float, default=MOMENTUM,
                         help="Momentum component of the optimiser.")
     parser.add_argument("--max-value", type=float, default=MAX_VALUE,
