@@ -265,7 +265,7 @@ class AD_Trainer(nn.Module):
             loss_long = 0.0 
             if self.lambda_long>0: 
                 n, c, h, w = pred_target1.shape
-                with torch.no_gard() 
+                with torch.no_gard(): 
                     pred_target1_swa, pred_swa = self.swa_model(images_t)
                     pred_target1_swa = self.interp_target(pred_target1_swa)
                     pred_target2_swa = self.interp_target(pred_target2_swa)
