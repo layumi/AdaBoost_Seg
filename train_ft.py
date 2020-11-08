@@ -124,6 +124,8 @@ def get_arguments():
                         help="lambda_me for minimize cross entropy loss on target.")
     parser.add_argument("--lambda-kl-target", type=float, default=LAMBDA_KL_TARGET,
                         help="lambda_me for minimize kl loss on target.")
+    parser.add_argument("--lambda-long", type=float, default=0,
+                        help="lambda_long for minimize long-term consistency loss on target.")
     parser.add_argument("--momentum", type=float, default=MOMENTUM,
                         help="Momentum component of the optimiser.")
     parser.add_argument("--max-value", type=float, default=MAX_VALUE,
@@ -170,6 +172,7 @@ def get_arguments():
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
+    parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
     parser.add_argument("--often-balance", action='store_true', help="balance the apperance times.")
     parser.add_argument("--gpu-ids", type=str, default='0', help = 'choose gpus')
@@ -237,6 +240,8 @@ def main():
     trainloader = data.DataLoader(train_dataset,
                     batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     trainloader_iter = enumerate(trainloader)
+    # init adaboost loader
+    AD_trainloader = trainloader
 
     target_dataset = cityscapesDataSet(args.data_dir_target, args.data_list_target,
                      resize_size=args.input_size_target,
@@ -245,9 +250,13 @@ def main():
                      set=args.set, autoaug = args.autoaug_target)
     target_number = len(target_dataset.img_ids)
     print(target_number)
+    previous_weights = torch.FloatTensor( [1/target_number]*target_number )
     targetloader = data.DataLoader(target_dataset,
                     batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,pin_memory=True, drop_last=True)
     targetloader_iter = enumerate(targetloader)
+
+    targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
 
     # set up tensor board
     if args.tensorboard:
@@ -274,8 +283,9 @@ def main():
             swa_flag = False
             swa_model = swa_utils.AveragedModel(Trainer.G)
             print('start weight avg. Update Batchnorm. Taking a while')
-            swa_utils.update_bn(targetloader, swa_model, device ='cuda' )
-
+            with torch.no_grad():
+                swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
+            Trainer.swa_model = swa_model
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         #adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
         #adjust_learning_rate_D(Trainer.dis2_opt, i_iter, args)
@@ -288,8 +298,11 @@ def main():
             # Here I change the iterator with restart
             try:
                 _, batch = trainloader_iter.__next__()
-            except: 
-                trainloader_iter = enumerate(trainloader)
+            except:
+                if args.adaboost:
+                    trainloader_iter = enumerate(AD_trainloader)
+                else:
+                    trainloader_iter = enumerate(trainloader)
                 _, batch = trainloader_iter.__next__()
 
             try:
@@ -321,7 +334,7 @@ def main():
                     loss_D_value1 = 0
                     loss_D_value2 = 0
 
-        del pred1, pred2, pred_target1, pred_target2
+        del pred1, pred2, pred_target1, pred_target2, images, labels, images_t, labels_t
 
         if args.tensorboard:
             scalar_info = {
@@ -353,18 +366,35 @@ def main():
             torch.save(Trainer.G.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '.pth'))
             torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '_D1.pth'))
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pth'))
+            if args.swa and i_iter >= swa_start:
+                swa_model.update_parameters(Trainer.G)
+                with torch.no_grad():
+                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
             break
 
-        if i_iter % args.save_pred_every == 0 and i_iter != 0:
+        if i_iter % args.save_pred_every == 0  and i_iter != 0:
             print('taking snapshot ...')
             torch.save(Trainer.G.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
             torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
-            if args.swa: 
+            if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
-                swa_utils.update_bn( targetloader, swa_model, device = 'cuda')
+                with torch.no_grad():
+                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                Trainer.swa_model = swa_model
+
+            if args.adaboost:
+                # since in the phase 2, target and train is from the same data.
+                with torch.no_grad():
+                    weights = Trainer.make_sample_weights(targetloader2, previous_weights)
+                previous_weights = weights
+                print(torch.sum(weights))
+                sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+                AD_trainloader = data.DataLoader(train_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                trainloader_iter = enumerate(AD_trainloader)
 
     if args.tensorboard:
         writer.close()

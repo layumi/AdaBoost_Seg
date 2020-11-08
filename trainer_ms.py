@@ -7,6 +7,7 @@ from model.discriminator import FCDiscriminator
 from model.ms_discriminator import MsImageDis
 import torch
 import torch.nn.init as init
+import tqdm
 import copy
 import numpy as np
 #fp16
@@ -121,6 +122,7 @@ class AD_Trainer(nn.Module):
         self.max_value = args.max_value
         self.lambda_me_target = args.lambda_me_target
         self.lambda_kl_target = args.lambda_kl_target
+        self.lambda_long  = args.lambda_long
         self.lambda_adv_target1 = args.lambda_adv_target1
         self.lambda_adv_target2 = args.lambda_adv_target2
         self.class_w = torch.FloatTensor(self.num_classes).zero_().cuda() + 1
@@ -163,6 +165,32 @@ class AD_Trainer(nn.Module):
             labels[loss < mm] = 255
             return labels
 
+    def make_sample_weights(self, imageloader, previous_weight = None):
+            print('update Adaboost Sampling via Average Model')
+            sm = torch.nn.Softmax(dim = 0)
+            weight = torch.FloatTensor()
+            kl_distance = nn.KLDivLoss( reduction = 'none')
+            try: 
+                self.swa_model.eval()
+            except: 
+                self.swa_model = copy.deepcopy(self.G)
+                self.swa_model.eval()
+
+            with tqdm.tqdm(imageloader, ascii=True) as tq:
+                for images, _, _, _ in tq:
+                    images = images.cuda()
+                    pred1, pred2 = self.swa_model(images)
+                    pred1 = self.interp(pred1)
+                    pred2 = self.interp(pred2)
+                    variance = torch.sum(kl_distance(self.log_sm(pred1),self.sm(pred2)), dim=1)
+                    mean_variance = torch.mean( torch.mean(variance, dim=2), dim=1)
+                    mean_variance = mean_variance.cpu()
+                    weight = torch.cat( (weight, mean_variance), dim = 0)
+            if previous_weight is not None:
+                weight = (sm(weight) + previous_weight)*0.5
+            else:
+                weight = sm(weight)
+            return weight
 
     def gen_update(self, images, images_t, labels, labels_t, i_iter):
             self.gen_opt.zero_grad()
@@ -233,6 +261,19 @@ class AD_Trainer(nn.Module):
                 #loss_kl = (self.kl_loss(self.log_sm(pred_target2) , self.sm(pred_target1) ) ) / (n*h*w) + (self.kl_loss(self.log_sm(pred_target1) , self.sm(pred_target2)) ) / (n*h*w)
                 print(loss_kl)
                 loss += self.lambda_kl_target * loss_kl
+
+            # long consistency
+            loss_long = 0.0 
+            if self.lambda_long>0: 
+                n, c, h, w = pred_target1.shape
+                with torch.no_grad(): 
+                    pred_target1_swa, pred_target2_swa = self.swa_model(images_t)
+                    pred_target1_swa = self.interp_target(pred_target1_swa)
+                    pred_target2_swa = self.interp_target(pred_target2_swa)
+                mean_pred_swa = self.sm(0.5*pred_target1_swa + pred_target2_swa)
+                loss_long = ( self.kl_loss(self.log_sm(pred_target2) , mean_pred_swa)  + self.kl_loss(self.log_sm(pred_target1) , mean_pred_swa))/(n*h*w)
+                loss += self.lambda_long * loss_long
+
 
             if self.fp16:
                 with amp.scale_loss(loss, self.gen_opt) as scaled_loss:

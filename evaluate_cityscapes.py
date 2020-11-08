@@ -81,7 +81,7 @@ def get_arguments():
                         help="Where restore model parameters from.")
     parser.add_argument("--gpu", type=int, default=0,
                         help="choose gpu device.")
-    parser.add_argument("--batchsize", type=int, default=16,
+    parser.add_argument("--batchsize", type=int, default=24,
                         help="choose gpu device.")
     parser.add_argument("--set", type=str, default=SET,
                         help="choose evaluation set.")
@@ -178,7 +178,8 @@ def main():
         trainloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.train_data_list, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
         print('update bn on training images')
-        swa_utils.update_bn(trainloader, model, device='cuda')
+        with torch.no_grad():
+            swa_utils.update_bn(trainloader, model, device='cuda')
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
@@ -258,7 +259,6 @@ def main():
             p.map(save, zip(output_iterator, name) )
             p.map(save_heatmap, zip(heatmap_iterator, name) )
             p.map(save_scoremap, zip(scoremap_iterator, name) )
-
         del output_batch
 
     
