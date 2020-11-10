@@ -297,7 +297,10 @@ def main():
             try:
                 _, batch = trainloader_iter.__next__()
             except:
-                trainloader_iter = enumerate(trainloader)
+                if args.adaboost:
+                    trainloader_iter = enumerate(AD_trainloader)
+                else:
+                    trainloader_iter = enumerate(trainloader)
                 _, batch = trainloader_iter.__next__()
 
             try:
