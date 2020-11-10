@@ -240,7 +240,7 @@ def main():
                                                      resize_size=args.input_size_target,
                                                      crop_size=args.crop_size,
                                                      scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
-                                                     set=args.set, autoaug = args.autoaug_target),
+                                                     set=args.set, autoaug = args.autoaug_target)
                    
     target_number = len(target_dataset.img_ids)
     previous_weights = torch.FloatTensor( [1/target_number]*target_number )
