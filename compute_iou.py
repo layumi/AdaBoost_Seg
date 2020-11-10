@@ -50,8 +50,8 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
             print(('Skipping: len(gt) = {:d}, len(pred) = {:d}, {:s}, {:s}'.format(len(label.flatten()), len(pred.flatten()), gt_imgs[ind], pred_imgs[ind])))
             continue
         hist += fast_hist(label.flatten(), pred.flatten(), num_classes)
-        if ind > 0 and ind % 10 == 0:
-            print(('{:d} / {:d}: {:0.2f}'.format(ind, len(gt_imgs), 100*np.mean(per_class_iu(hist)))))
+        #if ind > 0 and ind % 10 == 0:
+        #    print(('{:d} / {:d}: {:0.2f}'.format(ind, len(gt_imgs), 100*np.mean(per_class_iu(hist)))))
     
     mIoUs = per_class_iu(hist)
     for ind_class in range(num_classes):

@@ -109,7 +109,7 @@ def main():
 
     config_path = os.path.join(os.path.dirname(args.restore_from),'opts.yaml')
     with open(config_path, 'r') as stream:
-        config = yaml.load(stream)
+        config = yaml.safe_load(stream)
 
     args.model = config['model']
     print('ModelType:%s'%args.model)
