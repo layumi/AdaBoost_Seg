@@ -251,7 +251,7 @@ def main():
     # init adaboost loader
     AD_targetloader = targetloader
 
-    targetloader2 = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+    targetloader2 = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
 
 
