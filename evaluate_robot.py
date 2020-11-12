@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import yaml
 import time
+import swa_utils
 
 torch.backends.cudnn.benchmark=True
 
@@ -29,6 +30,7 @@ IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 DATA_DIRECTORY = './data/Oxford_Robot_ICCV19'
 DATA_LIST_PATH = './dataset/robot_list/val.txt'
+TRAIN_DATA_LIST_PATH = './dataset/robot_list/train.txt'
 SAVE_PATH = './result/robot'
 
 IGNORE_LABEL = 255
@@ -77,6 +79,8 @@ def get_arguments():
                         help="Path to the directory containing the Cityscapes dataset.")
     parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH,
                         help="Path to the file listing the images in the dataset.")
+    parser.add_argument("--train-data-list", type=str, default=TRAIN_DATA_LIST_PATH,
+                        help="Path to the train file listing the images in the dataset.")
     parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL,
                         help="The index of the label to ignore during the training.")
     parser.add_argument("--num-classes", type=int, default=NUM_CLASSES,
