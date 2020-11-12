@@ -91,6 +91,7 @@ def get_arguments():
                         help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
+    parser.add_argument("--update_bn", action='store_true', help='update batchnorm')
     return parser.parse_args()
 
 def save(output_name):
@@ -161,6 +162,13 @@ def main():
     testloader3 = data.DataLoader(robotDataSet(args.data_dir, args.data_list, crop_size=(round(th*scale), round(tw*scale) ), resize_size=( round(tw*scale), round(th*scale)), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
+
+    if args.update_bn:
+        trainloader = data.DataLoader(robotDataSet(args.data_dir, args.train_data_list, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
+        print('update bn on training images')
+        with torch.no_grad():
+            swa_utils.update_bn(trainloader, model, device='cuda')
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(960, 1280), mode='bilinear', align_corners=True)

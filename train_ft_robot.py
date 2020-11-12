@@ -253,7 +253,7 @@ def main():
                            pin_memory=True, drop_last=True)
     targetloader_iter = enumerate(targetloader)
     targetloader2 = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=12, shuffle=False, pin_memory=True, num_workers=4)
+                           batch_size=8, shuffle=False, pin_memory=True, num_workers=4)
 
     # set up tensor board
     if args.tensorboard:
