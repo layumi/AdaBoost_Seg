@@ -165,6 +165,7 @@ def get_arguments():
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
+    parser.add_argument("--mse", action='store_true', help="use se block.")
     parser.add_argument("--rkl", action='store_true', help="use se block.")
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")
