@@ -48,7 +48,7 @@ class robot_pseudo_DataSet(data.Dataset):
             if set == 'val':
                 label_file = osp.join(self.root, "anno/%s" %name )
             else:
-                label_file = osp.join(self.root, "pseudo_train_0.9/%s" %name )
+                label_file = osp.join(self.root, "pseudo_train/%s" %name )
             self.files.append({
                 "img": img_file,
                 "label": label_file,
