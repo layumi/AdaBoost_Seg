@@ -280,8 +280,9 @@ def main():
             swa_flag = False
             swa_model = swa_utils.AveragedModel(Trainer.G)
             print('start weight avg. Update Batchnorm. Taking a while')
-            with torch.no_grad():
-                swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
+            # For RobotCar, We do not update bn
+            #with torch.no_grad():
+            #    swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
             Trainer.swa_model = swa_model
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
@@ -365,8 +366,8 @@ def main():
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pth'))
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
-                with torch.no_grad():
-                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                #with torch.no_grad():
+                #    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
             break
 
@@ -378,8 +379,8 @@ def main():
             # update model every 5000 iteration, saving moving average model
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
-                with torch.no_grad():
-                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                #with torch.no_grad():
+                #    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 Trainer.swa_model = swa_model
 

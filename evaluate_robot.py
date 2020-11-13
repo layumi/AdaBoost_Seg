@@ -149,7 +149,7 @@ def main():
     except:
         model = torch.nn.DataParallel(model)
         model.load_state_dict(saved_state_dict)
-    #model = torch.nn.DataParallel(model)
+    model = torch.nn.DataParallel(model)
     model.eval()
     model.cuda(gpu0)
 
@@ -168,8 +168,8 @@ def main():
 
 
     if args.update_bn:
-        trainloader = data.DataLoader(robotDataSet(args.data_dir, args.train_data_list, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
+        trainloader = data.DataLoader(robotDataSet(args.data_dir, args.train_data_list, crop_size=(512, 1024), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=24, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
         print('update bn on training images')
         with torch.no_grad():
             swa_utils.update_bn(trainloader, model, device='cuda')
