@@ -54,6 +54,7 @@ RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
+THRESHOLD = 1.0
 WEIGHT_DECAY = 0.0005
 WARM_UP = 0 # no warmup
 LOG_DIR = './log'
@@ -160,6 +161,7 @@ def get_arguments():
     parser.add_argument("--weight-decay", type=float, default=WEIGHT_DECAY,
                         help="Regularisation parameter for L2-loss.")
     parser.add_argument("--warm-up", type=float, default=WARM_UP, help = 'warm up iteration')
+    parser.add_argument("--threshold", type=float, default=THRESHOLD, help = 'warm up iteration')
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
@@ -232,7 +234,7 @@ def main():
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, 
-                    set='train', autoaug = args.autoaug, synthia=True)
+                    set='train', autoaug = args.autoaug, threshold = args.threshold, synthia=True)
     train_number = len(train_dataset.img_ids)
     trainloader = data.DataLoader(train_dataset,
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)

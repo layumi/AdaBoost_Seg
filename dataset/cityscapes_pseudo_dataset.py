@@ -47,6 +47,8 @@ class cityscapes_pseudo_DataSet(data.Dataset):
                 label_file = osp.join(self.root, "pseudo_%.1f/%s/%s" % (threshold, self.set, name ))
             if synthia:
                 label_file = osp.join(self.root, "pseudo_SYNTHIA/%s/%s" % (self.set, name ))
+                if threshold != 1.0:
+                     label_file = osp.join(self.root, "pseudo_SYNTHIA_%.1f/%s/%s" % (threshold, self.set, name ))
             self.files.append({
                 "img": img_file,
                 "label": label_file,
