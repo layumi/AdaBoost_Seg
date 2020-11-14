@@ -14,6 +14,7 @@ from model.deeplab import Res_Deeplab
 from model.deeplab_multi import DeeplabMulti
 from model.deeplab_vgg import DeeplabVGG
 from dataset.robot_dataset import robotDataSet
+from dataset.cityscapes_train_dataset import cityscapesDataSet
 from collections import OrderedDict
 import os
 from PIL import Image
@@ -167,12 +168,19 @@ def main():
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
 
-    if args.update_bn:
-        trainloader = data.DataLoader(robotDataSet(args.data_dir, args.train_data_list, crop_size=(512, 1024), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=24, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
+    if args.update_bn: 
+        trainloader = data.DataLoader(cityscapesDataSet( './data/Cityscapes/data', './dataset/cityscapes_list/train.txt',
+                            crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                            batch_size=36, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
+        trainloader2 = data.DataLoader(robotDataSet(args.data_dir, args.train_data_list,
+                            max_iters = 894*2, 
+                            crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                            batch_size=24, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
         print('update bn on training images')
         with torch.no_grad():
-            swa_utils.update_bn(trainloader, model, device='cuda')
+            #swa_utils.update_bn(trainloader, model, device='cuda')
+            swa_utils.update_bn(trainloader2, model, device='cuda')
+            #swa_utils.update_bn2( trainloader, trainloader2, model, device='cuda')
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
         interp = nn.Upsample(size=(960, 1280), mode='bilinear', align_corners=True)

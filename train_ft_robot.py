@@ -257,6 +257,9 @@ def main():
     targetloader2 = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=8, shuffle=False, pin_memory=True, num_workers=4)
 
+    targetloader2_bn = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=24, shuffle=True, pin_memory=True, num_workers=4)
+
     # set up tensor board
     if args.tensorboard:
         args.log_dir += '/'+ os.path.basename(args.snapshot_dir)
@@ -282,8 +285,8 @@ def main():
             swa_flag = False
             swa_model = swa_utils.AveragedModel(Trainer.G)
             print('start weight avg. Update Batchnorm. Taking a while')
-            #with torch.no_grad():
-            #    swa_utils.update_bn(targetloader2, swa_model, device ='cuda' )
+            with torch.no_grad():
+                swa_utils.update_bn(targetloader2_bn, swa_model, device ='cuda' )
             Trainer.swa_model = swa_model
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
@@ -368,8 +371,8 @@ def main():
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pth'))
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
-                #with torch.no_grad():
-                #    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                with torch.no_grad():
+                    swa_utils.update_bn( targetloader2_bn, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
             break
 
@@ -381,8 +384,8 @@ def main():
             # update model every 5000 iteration, saving moving average model
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
-                #with  torch.no_grad():
-                #    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                with  torch.no_grad():
+                    swa_utils.update_bn( targetloader2_bn, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 Trainer.swa_model = swa_model
 
