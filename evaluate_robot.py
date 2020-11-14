@@ -173,9 +173,9 @@ def main():
                             crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                             batch_size=36, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
         trainloader2 = data.DataLoader(robotDataSet(args.data_dir, args.train_data_list,
-                            max_iters = 894*2, 
+                            max_iters = 894*3, 
                             crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                            batch_size=24, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
+                            batch_size=72, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
         print('update bn on training images')
         with torch.no_grad():
             #swa_utils.update_bn(trainloader, model, device='cuda')
