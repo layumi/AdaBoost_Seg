@@ -282,6 +282,9 @@ def main():
         if args.swa and swa_flag and i_iter >= swa_start:
             swa_flag = False
             if args.ema>0:
+                #ema policy
+                ema_avg = lambda averaged_model_parameter, model_parameter, num_averaged:\
+                      args.ema * averaged_model_parameter + (1-args.ema) * model_parameter
                 swa_model = swa_utils.AveragedModel(Trainer.G, avg_fn=ema_avg)
             else:
                 swa_model = swa_utils.AveragedModel(Trainer.G)
@@ -303,9 +306,6 @@ def main():
                 _, batch = trainloader_iter.__next__()
             except:
                 if args.adaboost:
-                    #ema policy
-                    ema_avg = lambda averaged_model_parameter, model_parameter, num_averaged:\
-                          args.ema * averaged_model_parameter + (1-args.ema) * model_parameter
                     trainloader_iter = enumerate(AD_trainloader)
                 else:
                     trainloader_iter = enumerate(trainloader)
