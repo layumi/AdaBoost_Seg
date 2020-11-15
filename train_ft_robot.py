@@ -163,6 +163,7 @@ def get_arguments():
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
+    parser.add_argument("--ema", type=float, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
     parser.add_argument("--mse", action='store_true', help="use se block.")
@@ -283,7 +284,13 @@ def main():
         # moving average
         if args.swa and swa_flag and i_iter >= swa_start:
             swa_flag = False
-            swa_model = swa_utils.AveragedModel(Trainer.G)
+            if args.ema>0:
+                #ema policy
+                ema_avg = lambda averaged_model_parameter, model_parameter, num_averaged:\
+                      args.ema * averaged_model_parameter + (1-args.ema) * model_parameter
+                swa_model = swa_utils.AveragedModel(Trainer.G, avg_fn=ema_avg)
+            else:
+                swa_model = swa_utils.AveragedModel(Trainer.G)
             print('start weight avg. Update Batchnorm. Taking a while')
             with torch.no_grad():
                 swa_utils.update_bn(targetloader2_bn, swa_model, device ='cuda' )
