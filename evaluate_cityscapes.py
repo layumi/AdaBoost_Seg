@@ -200,7 +200,7 @@ def main():
         alpha = 1.0
         beta = 0.5
         #inputs3 = Variable(image3).cuda()
-        #print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
+        print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
         if args.model == 'DeepLab':
             with torch.no_grad():
                 output1, output2 = model(inputs)
