@@ -16,7 +16,7 @@ import time
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class robot_pseudo_DataSet(data.Dataset):
-    def __init__(self, root, list_path, max_iters=None, resize_size=(1280, 960), crop_size=(512, 1024), mean=(128, 128, 128), scale=True, mirror=True, ignore_label=255, set='train', autoaug=False):
+    def __init__(self, root, list_path, max_iters=None, resize_size=(1280, 960), crop_size=(512, 1024), mean=(128, 128, 128), scale=True, mirror=True, ignore_label=255, set='train', autoaug=False, threshold = 1.0):
         self.root = root
         self.list_path = list_path
         self.crop_size = crop_size
@@ -49,6 +49,8 @@ class robot_pseudo_DataSet(data.Dataset):
                 label_file = osp.join(self.root, "anno/%s" %name )
             else:
                 label_file = osp.join(self.root, "pseudo_train/%s" %name )
+                if threshold != 1.0:
+                    label_file = osp.join(self.root, "pseudo_train_%.1f/%s" % (threshold, name ))
             self.files.append({
                 "img": img_file,
                 "label": label_file,

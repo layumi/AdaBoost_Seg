@@ -147,10 +147,10 @@ def main():
 
     try:
         model.load_state_dict(saved_state_dict)
+        model = torch.nn.DataParallel(model)
     except:
         model = torch.nn.DataParallel(model)
         model.load_state_dict(saved_state_dict)
-    model = torch.nn.DataParallel(model)
     model.eval()
     model.cuda(gpu0)
 
