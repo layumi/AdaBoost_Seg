@@ -171,7 +171,11 @@ def update_bn2(loader, loader2, model, device=None):
         bn_module.momentum = momenta[bn_module]
     model.train(was_training)
 
-
+def fliplr(img):
+    '''flip horizontal'''
+    inv_idx = torch.arange(img.size(3)-1,-1,-1).long().cuda()  # N x C x H x W
+    img_flip = img.index_select(3,inv_idx)
+    return img_flip
 
 def update_bn(loader, model, device=None):
     r"""Updates BatchNorm running_mean, running_var buffers in the model.
@@ -222,6 +226,7 @@ def update_bn(loader, model, device=None):
 
         #model(input)
         model(input.detach())
+        model(fliplr(input.detach()))
 
     del input
 

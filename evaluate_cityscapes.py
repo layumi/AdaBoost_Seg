@@ -175,7 +175,7 @@ def main():
 
     if args.update_bn:
         trainloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.train_data_list, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=24, shuffle=True, pin_memory=True, num_workers=4, drop_last=True)
+                           batch_size=24, shuffle=False, pin_memory=True, num_workers=4, drop_last=True)
         print('update bn on training images')
         with torch.no_grad():
             swa_utils.update_bn(trainloader, model, device='cuda')
