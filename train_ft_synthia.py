@@ -395,7 +395,7 @@ def main():
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 Trainer.swa_model = swa_model
 
-            if args.adaboost:
+            if args.adaboost and i_iter >= swa_start:
                 # since in the phase 2, target and train is from the same data.
                 with torch.no_grad():
                     weights = Trainer.make_sample_weights(targetloader2, previous_weights)
