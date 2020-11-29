@@ -1,5 +1,11 @@
 import torch
 import time
+import numpy as np
+
+def cosine_rampdown(current, rampdown_length):
+    """Cosine rampdown from https://arxiv.org/abs/1608.03983"""
+    assert 0 <= current <= rampdown_length
+    return max(0., float(.5 * (np.cos(np.pi * current / rampdown_length) + 1)))
 
 def lr_poly(base_lr, iter, max_iter, power):
     return base_lr * ((1 - float(iter) / max_iter) ** (power))
@@ -20,6 +26,10 @@ def adjust_learning_rate(optimizer, i_iter, args):
     else: 
         lr = lr_poly(args.learning_rate, i_iter, args.num_steps, args.power)
         #lr = lr_step(args.learning_rate, i_iter)
+
+    if arg.cosine:
+        lr = lr * cosine_rampdown( i_iter - args.swa_start, args.save_pred_every)
+
     optimizer.param_groups[0]['lr'] = lr
     print('-------lr_G: %f-------'%lr)
     if len(optimizer.param_groups) > 1:
