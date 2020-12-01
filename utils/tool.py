@@ -28,7 +28,7 @@ def adjust_learning_rate(optimizer, i_iter, args):
         #lr = lr_step(args.learning_rate, i_iter)
 
     if i_iter>=args.swa_start and args.cosine:
-        lr = lr * cosine_rampdown( i_iter - args.swa_start, args.save_pred_every)
+        lr = lr * cosine_rampdown( (i_iter - args.swa_start)%args.save_pred_every, args.save_pred_every)
 
     optimizer.param_groups[0]['lr'] = lr
     print('-------lr_G: %f-------'%lr)
