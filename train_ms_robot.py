@@ -256,7 +256,7 @@ def main():
     targetloader2 = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=8, shuffle=False, pin_memory=True, num_workers=4)
 
-    targetloader2_bn = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, max_iters=target_number*3, crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+    targetloader2_shuffle = data.DataLoader( robotDataSet(args.data_dir_target, args.data_list_target, max_iters=target_number*3, crop_size=(480, 960), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=36, shuffle=True, pin_memory=True, num_workers=4)
 
 
@@ -377,7 +377,7 @@ def main():
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
-                    swa_utils.update_bn( targetloader2_bn, swa_model, device = 'cuda')
+                    swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
             break
 
@@ -390,7 +390,7 @@ def main():
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
-                    swa_utils.update_bn( targetloader2_bn, swa_model, device = 'cuda')
+                    swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 Trainer.swa_model = swa_model
 

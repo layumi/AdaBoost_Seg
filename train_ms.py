@@ -255,7 +255,9 @@ def main():
     AD_targetloader = targetloader
 
     targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
+                           batch_size=72, shuffle=False, pin_memory=True, num_workers=4)
+    targetloader2_shuffle = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=True, mirror=True, set='train'),
+                           batch_size=72, shuffle=True, pin_memory=True, num_workers=4)
 
     # set up tensor board
     if args.tensorboard:
@@ -376,7 +378,7 @@ def main():
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
-                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                    swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
             break
 
@@ -389,7 +391,7 @@ def main():
             if args.swa and i_iter >= swa_start:
                 swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
-                    swa_utils.update_bn( targetloader2, swa_model, device = 'cuda')
+                    swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 Trainer.swa_model = swa_model
 

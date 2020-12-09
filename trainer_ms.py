@@ -171,10 +171,12 @@ class AD_Trainer(nn.Module):
             weight = torch.FloatTensor()
             kl_distance = nn.KLDivLoss( reduction = 'none')
             try: 
-                self.swa_model.eval()
+                #self.swa_model.eval()
+                self.swa_model.train()
             except: 
                 self.swa_model = copy.deepcopy(self.G)
-                self.swa_model.eval()
+                #self.swa_model.eval()
+                self.swa_model.train()
 
             with tqdm.tqdm(imageloader, ascii=True) as tq:
                 for images, _, _, _ in tq:

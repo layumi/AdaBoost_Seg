@@ -202,10 +202,13 @@ class AD_Trainer(nn.Module):
             weight = torch.FloatTensor()
             kl_distance = nn.KLDivLoss( reduction = 'none')
             try:
-                self.swa_model.eval().cuda()
+                #self.swa_model.eval().cud()
+                # train mode also helps to update bn
+                self.swa_model.train().cuda()
             except:
                 self.swa_model = copy.deepcopy(self.G)
-                self.swa_model.eval().cud()
+                #self.swa_model.eval().cuda()
+                self.swa_model.train().cuda()
 
             with tqdm.tqdm(imageloader, ascii=True) as tq:
                 for images, _, _, _ in tq: 
