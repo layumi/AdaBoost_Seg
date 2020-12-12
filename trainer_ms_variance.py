@@ -210,6 +210,8 @@ class AD_Trainer(nn.Module):
                 #self.swa_model.eval().cuda()
                 self.swa_model.train().cuda()
 
+            self.G.cpu() # save memory
+
             with tqdm.tqdm(imageloader, ascii=True) as tq:
                 for images, _, _, _ in tq: 
                     images = images.cuda()
@@ -226,6 +228,7 @@ class AD_Trainer(nn.Module):
                 weight = sm(weight)
             
             self.swa_model.cpu()
+            self.G.cuda()
             return weight
 
     def gen_update(self, images, images_t, labels, labels_t, i_iter):
