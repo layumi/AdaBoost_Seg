@@ -293,7 +293,7 @@ def main():
             #print('start weight avg. Update Batchnorm. Taking a while')
             #with torch.no_grad():
             #    swa_utils.update_bn(targetloader2_bn, swa_model, device ='cuda' )
-            Trainer.swa_model = swa_model
+            Trainer.swa_model = swa_model.cpu()
 
         adjust_learning_rate(Trainer.gen_opt , i_iter, args)
         adjust_learning_rate_D(Trainer.dis1_opt, i_iter, args)
@@ -392,7 +392,7 @@ def main():
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
                 torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
-                Trainer.swa_model = swa_model
+                Trainer.swa_model = swa_model.cpu()
 
             if args.adaboost and i_iter >= swa_start:
                 with torch.no_grad():
