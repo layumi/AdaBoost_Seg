@@ -376,10 +376,11 @@ def main():
             torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '_D1.pth'))
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pth'))
             if args.swa and i_iter >= swa_start:
-                swa_model.update_parameters(Trainer.G)
+                Trainer.swa_model.cuda()
+                Trainer.swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
-                    swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
-                torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                    swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
+                torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
@@ -389,11 +390,12 @@ def main():
             torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
             if args.swa and i_iter >= swa_start:
-                swa_model.update_parameters(Trainer.G)
+                Trainer.swa_model.cuda()
+                Trainer.swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
-                    swa_utils.update_bn( targetloader2_shuffle, swa_model, device = 'cuda')
-                torch.save(swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
-                Trainer.swa_model = swa_model.cpu()
+                    swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
+                torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                Trainer.swa_model.cpu()
 
             if args.adaboost and i_iter >= swa_start:
                 with torch.no_grad():
