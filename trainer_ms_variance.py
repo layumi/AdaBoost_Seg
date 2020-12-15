@@ -60,6 +60,7 @@ class AD_Trainer(nn.Module):
     def __init__(self, args):
         super(AD_Trainer, self).__init__()
         self.fp16 = args.fp16
+        self.swa_start = args.swa_start
         self.class_balance = args.class_balance
         self.often_balance = args.often_balance
         self.num_classes = args.num_classes
@@ -272,10 +273,13 @@ class AD_Trainer(nn.Module):
             if i_iter < 15000:
                 self.lambda_kl_target_copy = 0
                 self.lambda_me_target_copy = 0
-                self.lambda_long_copy = 0
             else:
                 self.lambda_kl_target_copy = self.lambda_kl_target
                 self.lambda_me_target_copy = self.lambda_me_target
+
+            if i_iter < self.swa_start:
+                self.lambda_long_copy = 0
+            else:
                 self.lambda_long_copy = self.lambda_long
 
             loss_me = 0.0
@@ -301,10 +305,12 @@ class AD_Trainer(nn.Module):
             loss_long = 0.0
             if self.lambda_long_copy>0:
                 n, c, h, w = pred_target1.shape
+                self.swa_model.cuda()
                 with torch.no_grad():
                     pred_target1_swa, pred_target2_swa = self.swa_model(images_t)
                     pred_target1_swa = self.interp_target(pred_target1_swa)
                     pred_target2_swa = self.interp_target(pred_target2_swa)
+                self.swa_model.cpu()
                 mean_pred_swa = self.sm(0.5*pred_target1_swa + pred_target2_swa)
                 loss_long = ( self.kl_loss(self.log_sm(pred_target2) , mean_pred_swa)  + self.kl_loss(self.log_sm(pred_target1) , mean_pred_swa))/(n*h*w)
                 loss += self.lambda_long * loss_long
