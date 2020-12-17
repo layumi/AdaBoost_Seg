@@ -156,9 +156,11 @@ def main():
 
     try:
         model.load_state_dict(saved_state_dict)
+        print('single GPU model')
         model = torch.nn.DataParallel(model)
     except:
         model = torch.nn.DataParallel(model)
+        print('multiple GPU model')
         model.load_state_dict(saved_state_dict)
     model.eval()
     model.cuda(gpu0)
