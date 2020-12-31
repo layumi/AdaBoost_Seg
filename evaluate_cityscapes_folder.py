@@ -10,7 +10,7 @@ result = './snapshots/%s/result.txt'%opt.name
 for iter in np.arange(1,11):
     if opt.average:
         os.system('echo %d+%s | tee -a %s'%(iter*10000, 'average', result))
-        os.system('python evaluate_cityscapes.py --restore ./snapshots/%s/GTA5_%d_average.pth --batchsize 4  | tee -a %s'%(opt.name,iter*10000, result))
+        os.system('python evaluate_cityscapes.py --restore ./snapshots/%s/GTA5_%d_average.pth --batchsize 12  | tee -a %s'%(opt.name,iter*10000, result))
     else:
         os.system('echo %d | tee -a %s'%(iter*10000, result))
-        os.system('python evaluate_cityscapes.py --restore ./snapshots/%s/GTA5_%d.pth --batchsize 4  | tee -a %s'%(opt.name,iter*10000, result))
+        os.system('python evaluate_cityscapes.py --restore ./snapshots/%s/GTA5_%d.pth --batchsize 12  | tee -a %s'%(opt.name,iter*10000, result))

@@ -5,7 +5,7 @@ import numpy as np
 def cosine_rampdown(current, rampdown_length):
     """Cosine rampdown from https://arxiv.org/abs/1608.03983"""
     assert 0 <= current <= rampdown_length
-    return max(0., float(.5 * (np.cos(np.pi * current / rampdown_length) + 1)))
+    return max(0.01, float(.5 * (np.cos(np.pi * current / rampdown_length) + 1)))
 
 def lr_poly(base_lr, iter, max_iter, power):
     return base_lr * ((1 - float(iter) / max_iter) ** (power))
