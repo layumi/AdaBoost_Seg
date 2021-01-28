@@ -69,8 +69,8 @@ class AD_Trainer(nn.Module):
         self.multi_gpu = args.multi_gpu
         self.only_hard_label = args.only_hard_label
         if args.model == 'DeepLab':
-            self.G = DeeplabMulti(num_classes=args.num_classes, use_se = args.use_se, train_bn = args.train_bn, norm_style = args.norm_style, droprate = args.droprate)
-            if args.restore_from[:4] == 'http' :
+            self.G = DeeplabMulti(num_classes=args.num_classes, use_se = args.use_se, train_bn = args.train_bn, norm_style = args.norm_style, droprate = args.droprate, use_blur = args.use_blur)
+           if args.restore_from[:4] == 'http' :
                 saved_state_dict = model_zoo.load_url(args.restore_from)
             else:
                 saved_state_dict = torch.load(args.restore_from)

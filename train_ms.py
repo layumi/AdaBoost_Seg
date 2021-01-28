@@ -166,6 +166,7 @@ def get_arguments():
     parser.add_argument("--ema", type=float, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
+    parser.add_argument("--use-blur", action='store_true', help="use blur pooling.")
     parser.add_argument("--cosine", action='store_true', help="use cosine learning rate after swa_start.")
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")

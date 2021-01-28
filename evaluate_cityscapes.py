@@ -127,6 +127,9 @@ def main():
     with open(config_path, 'r') as stream:
         config = yaml.safe_load(stream)
 
+    if not 'use_blur' in config:
+        config['use_blur'] = False
+
     args.model = config['model']
     print('ModelType:%s NormType:%s'% (args.model, config['norm_style']))
     gpu0 = args.gpu
@@ -139,7 +142,7 @@ def main():
         os.makedirs(args.save)
 
     if args.model == 'DeepLab':
-        model = DeeplabMulti(num_classes=args.num_classes, use_se = config['use_se'], train_bn = False, norm_style = config['norm_style'])
+        model = DeeplabMulti(num_classes=args.num_classes, use_se = config['use_se'], train_bn = False, norm_style = config['norm_style'], use_blur = config['use_blur'])
     elif args.model == 'Oracle':
         model = Res_Deeplab(num_classes=args.num_classes)
         if args.restore_from == RESTORE_FROM:

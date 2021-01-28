@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import models
 import torch.nn.init as init
+from model.blurpool import BlurPool
 
 try:
     from itertools import izip as zip
@@ -43,7 +44,7 @@ def weights_init(init_type='gaussian'):
 
 class MsImageDis(nn.Module):
     # Multi-scale discriminator architecture
-    def __init__(self, input_dim=19):
+    def __init__(self, input_dim=19, use_blur = False):
         super(MsImageDis, self).__init__()
         self.n_layer = 2 #params['n_layer']
         self.gan_type = 'lsgan' #params['gan_type']
@@ -57,7 +58,9 @@ class MsImageDis(nn.Module):
         self.n_res = 4
         self.input_dim = input_dim
         self.fp16 = False
+        self.use_blur = use_blur
         self.downsample = nn.AvgPool2d(3, stride=2, padding=[1, 1], count_include_pad=False)
+
         if not self.gan_type == 'wgan':
             self.cnns = nn.ModuleList()
             for _ in range(self.num_scales):

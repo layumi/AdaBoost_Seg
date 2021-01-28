@@ -3,7 +3,7 @@ import math
 import torch.utils.model_zoo as model_zoo
 import torch
 import numpy as np
-
+from model.blurpool import  BlurPool
 affine_par = True
 
 
@@ -192,9 +192,10 @@ class Classifier_Module(nn.Module):
 
 
 class ResNetMulti(nn.Module):
-    def __init__(self, block, layers, num_classes, use_se = False, train_bn = False, norm_style = 'bn', droprate = 0.1):
+    def __init__(self, block, layers, num_classes, use_se = False, train_bn = False, norm_style = 'bn', droprate = 0.1, use_blur = False):
         self.inplanes = 64
         self.train_bn = train_bn
+        self.use_blur = use_blur
         super(ResNetMulti, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
@@ -202,7 +203,11 @@ class ResNetMulti(nn.Module):
         for i in self.bn1.parameters():
             i.requires_grad = self.train_bn
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
+        if self.use_blur:
+            self.maxpool = nn.Sequential(*[nn.MaxPool2d(kernel_size=3, stride=1, padding=1, ceil_mode=True),
+                                           BlurPool(64, filt_size=3, stride=2)  ])  # change
+        else:
+            self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
@@ -223,10 +228,18 @@ class ResNetMulti(nn.Module):
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion or dilation == 2 or dilation == 4:
-            downsample = nn.Sequential(
+            if self.use_blur:
+                downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                          kernel_size=1, stride=1, bias=False),
+                nn.BatchNorm2d(planes * block.expansion, affine=affine_par),
+                BlurPool(planes * block.expansion, filt_size=3,stride=stride))
+            else: 
+                downsample = nn.Sequential(
                 nn.Conv2d(self.inplanes, planes * block.expansion,
                           kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(planes * block.expansion, affine=affine_par))
+
         for i in downsample._modules['1'].parameters():
             i.requires_grad = self.train_bn
         layers = []
@@ -298,6 +311,6 @@ class ResNetMulti(nn.Module):
                 {'params': self.get_10x_lr_params(), 'lr': 10 * args.learning_rate}]
 
 
-def DeeplabMulti(num_classes=21, use_se = False, train_bn = False, norm_style = 'bn', droprate = 0.1):
-    model = ResNetMulti(Bottleneck, [3, 4, 23, 3], num_classes, use_se = use_se, train_bn = train_bn, norm_style = norm_style, droprate = droprate)
+def DeeplabMulti(num_classes=21, use_se = False, train_bn = False, norm_style = 'bn', droprate = 0.1, use_blur = False):
+    model = ResNetMulti(Bottleneck, [3, 4, 23, 3], num_classes, use_se = use_se, train_bn = train_bn, norm_style = norm_style, droprate = droprate, use_blur = use_blur)
     return model
