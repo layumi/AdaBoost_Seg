@@ -70,13 +70,13 @@ class AD_Trainer(nn.Module):
         self.only_hard_label = args.only_hard_label
         if args.model == 'DeepLab':
             self.G = DeeplabMulti(num_classes=args.num_classes, use_se = args.use_se, train_bn = args.train_bn, norm_style = args.norm_style, droprate = args.droprate, use_blur = args.use_blur)
-           if args.restore_from[:4] == 'http' :
+        if args.restore_from[:4] == 'http' :
                 saved_state_dict = model_zoo.load_url(args.restore_from)
-            else:
+        else:
                 saved_state_dict = torch.load(args.restore_from)
 
-            new_params = self.G.state_dict().copy()
-            for i in saved_state_dict:
+        new_params = self.G.state_dict().copy()
+        for i in saved_state_dict:
                 # Scale.layer5.conv2d_list.3.weight
                 i_parts = i.split('.')
                 # print i_parts
