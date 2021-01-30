@@ -160,6 +160,7 @@ def get_arguments():
                         help="Where to save snapshots of the model.")
     parser.add_argument("--weight-decay", type=float, default=WEIGHT_DECAY,
                         help="Regularisation parameter for L2-loss.")
+    parser.add_argument("--adam", action='store_true', help="use adam optimizer.")
     parser.add_argument("--warm-up", type=float, default=WARM_UP, help = 'warm up iteration')
     parser.add_argument("--threshold", type=float, default=THRESHOLD, help = 'warm up iteration')
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")

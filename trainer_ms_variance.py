@@ -103,7 +103,11 @@ class AD_Trainer(nn.Module):
             print("using apex synced BN")
             self.G = apex.parallel.convert_syncbn_model(self.G)
 
-        self.gen_opt = optim.SGD(self.G.optim_parameters(args),
+        if args.adam:
+            self.gen_opt = optim.Adam(self.G.optim_parameters(args),
+                          lr=args.learning_rate, weight_decay=args.weight_decay)
+        else:
+            self.gen_opt = optim.SGD(self.G.optim_parameters(args),
                           lr=args.learning_rate, momentum=args.momentum, nesterov=True, weight_decay=args.weight_decay)
 
         self.dis1_opt = optim.Adam(self.D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
