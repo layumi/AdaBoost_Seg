@@ -159,12 +159,14 @@ def get_arguments():
                         help="Where to save snapshots of the model.")
     parser.add_argument("--weight-decay", type=float, default=WEIGHT_DECAY,
                         help="Regularisation parameter for L2-loss.")
+    parser.add_argument("--adam", action='store_true', help="use adam optimizer.")
     parser.add_argument("--warm-up", type=float, default=WARM_UP, help = 'warm up iteration')
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
     parser.add_argument("--ema", type=float, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
+    parser.add_argument("--use-blur", action='store_true', help="use se block.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
     parser.add_argument("--cosine", action='store_true', help="use cosine learning rate after swa_start.")
     parser.add_argument("--only-hard-label",type=float, default=0,  

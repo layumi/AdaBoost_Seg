@@ -97,6 +97,7 @@ def get_arguments():
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
     parser.add_argument("--update_bn", action='store_true', help='update batchnorm')
+    parser.add_argument("--dynamic_bn", action='store_true', help='update batchnorm dynamically')
     return parser.parse_args()
 
 def save(output_name):
@@ -201,6 +202,23 @@ def main():
         inputs2 = image2.cuda()
         inputs3 = Variable(image3).cuda()
         print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
+
+        if args.dynamic_bn:
+            momenta = {}
+            for module in model.modules():
+                if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
+                    module.running_mean = torch.zeros_like(module.running_mean)
+                    module.running_var = torch.ones_like(module.running_var)
+                    momenta[module] = module.momentum
+            model.train()
+            for module in momenta.keys():
+                module.momentum = None
+                module.num_batches_tracked *= 0
+            model(inputs)
+            for bn_module in momenta.keys():
+                bn_module.momentum = momenta[bn_module]
+            model.eval()
+
         if args.model == 'DeepLab':
             with torch.no_grad():
                 output1, output2 = model(inputs)
