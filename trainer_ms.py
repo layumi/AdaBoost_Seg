@@ -107,7 +107,7 @@ class AD_Trainer(nn.Module):
         if args.adam:
             optim_method = optim.Adam
         elif args.sam:
-            optim_method = optim.SAM
+            optim_method = SAM
         else:
             optim_method = optim.SGD
             
