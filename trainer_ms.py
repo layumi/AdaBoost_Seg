@@ -293,12 +293,6 @@ class AD_Trainer(nn.Module):
                 loss += self.lambda_long * loss_long
 
 
-            if self.fp16:
-                with amp.scale_loss(loss, self.gen_opt) as scaled_loss:
-                    scaled_loss.backward()
-            else:
-                loss.backward()
-
             val_loss = self.seg_loss(pred_target2, labels_t)
 
             return loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss
