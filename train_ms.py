@@ -173,6 +173,7 @@ def get_arguments():
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
     parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
+    parser.add_argument("--sam", action='store_true', help="enable sam.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
     parser.add_argument("--often-balance", action='store_true', help="balance the apperance times.")
     parser.add_argument("--gpu-ids", type=str, default='0', help = 'choose gpus')
@@ -330,7 +331,15 @@ def main():
             labels_t = labels_t.long().cuda()
 
             with Timer("Elapsed time in update: %f"):
-                loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)
+                loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)
+                if args.sam: # second forward-backward pass
+                    Trainer.gen_opt.first_step(zero_grad=True)
+                    loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)
+                    loss.backward()  # make sure to do a full forward pass
+                    Trainer.gen_opt.second_step(zero_grad=True)
+                else:
+                    Trainer.gen_opt.step()
+                
                 loss_seg_value1 += loss_seg1.item() / args.iter_size
                 loss_seg_value2 += loss_seg2.item() / args.iter_size
                 loss_adv_target_value1 += loss_adv_target1 / args.iter_size
