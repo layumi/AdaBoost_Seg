@@ -332,6 +332,11 @@ def main():
 
             with Timer("Elapsed time in update: %f"):
                 loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)
+                if self.fp16:
+                    with amp.scale_loss(loss, self.gen_opt) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
                 if args.sam: # second forward-backward pass
                     Trainer.gen_opt.first_step(zero_grad=True)
                     loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)
