@@ -10,6 +10,8 @@ import torch.nn.init as init
 import copy
 import tqdm
 import numpy as np
+from sam import SAM
+
 #fp16
 try:
     import apex
@@ -104,11 +106,14 @@ class AD_Trainer(nn.Module):
             self.G = apex.parallel.convert_syncbn_model(self.G)
 
         if args.adam:
-            self.gen_opt = optim.Adam(self.G.optim_parameters(args),
-                          lr=args.learning_rate, weight_decay=args.weight_decay)
+            optim_method = optim.Adam
+        elif args.sam:
+            optim_method = SAM
         else:
-            self.gen_opt = optim.SGD(self.G.optim_parameters(args),
-                          lr=args.learning_rate, momentum=args.momentum, nesterov=True, weight_decay=args.weight_decay)
+            optim_method = optim.SGD
+            
+        self.gen_opt = optim_method(self.G.optim_parameters(args),
+                      lr=args.learning_rate, momentum=args.momentum, nesterov=True, weight_decay=args.weight_decay)
 
         self.dis1_opt = optim.Adam(self.D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
 
