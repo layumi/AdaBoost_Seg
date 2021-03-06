@@ -324,16 +324,9 @@ class AD_Trainer(nn.Module):
                 loss_long = ( self.kl_loss(self.log_sm(pred_target2) , mean_pred_swa)  + self.kl_loss(self.log_sm(pred_target1) , mean_pred_swa))/(n*h*w)
                 loss += self.lambda_long * loss_long
 
-            if self.fp16:
-                with amp.scale_loss(loss, self.gen_opt) as scaled_loss:
-                    scaled_loss.backward()
-            else:
-                loss.backward()
-            self.gen_opt.step()
-
             val_loss = self.seg_loss(pred_target2, labels_t)
 
-            return loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss
+            return loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss
     
     def dis_update(self, pred1, pred2, pred_target1, pred_target2):
             self.dis1_opt.zero_grad()
