@@ -177,6 +177,7 @@ def get_arguments():
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
     parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
+    parser.add_argument("--sam", action='store_true', help="enable sam.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
     parser.add_argument("--often-balance", action='store_true', help="balance the apperance times.")
     parser.add_argument("--gpu-ids", type=str, default='0', help = 'choose gpus')
