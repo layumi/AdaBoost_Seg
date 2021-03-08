@@ -228,12 +228,14 @@ def main():
             with torch.no_grad():
                 output1, output2 = model(inputs)
                 output_batch = interp(sm(beta* output1 + alpha * output2))
+                output_batch1, output_batch2 = interp(output1), interp(output2)
                 heatmap_output1, heatmap_output2 = output1, output2
                 #output_batch = interp(sm(output1))
                 #output_batch = interp(sm(output2))
                 output1, output2 = model(fliplr(inputs))
                 output1, output2 = fliplr(output1), fliplr(output2)
                 output_batch += interp(sm(beta * output1 + alpha * output2))
+                output_batch1, output_batch2 = output_batch1+interp(output1), output_batch1+interp(output2)
                 heatmap_output1, heatmap_output2 = heatmap_output1+output1, heatmap_output2+output2
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
@@ -246,10 +248,12 @@ def main():
                 output1, output2 = model(fliplr(inputs2))
                 output1, output2 = fliplr(output1), fliplr(output2)
                 output_batch += interp(sm(beta * output1 + alpha * output2))
+                output_batch1, output_batch2 = output_batch1+interp(output1), output_batch1+interp(output2)
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs2
                 output_batch = output_batch.cpu().data.numpy()
+                output_batch1, output_batch2  = output_batch1.cpu().data.numpy(), output_batch2.cpu().data.numpy()
                 heatmap_batch = torch.sum(kl_distance(log_sm(heatmap_output1), sm(heatmap_output2)), dim=1) 
                 heatmap_batch = torch.log(1 + 10*heatmap_batch) # for visualization
                 heatmap_batch = heatmap_batch.cpu().data.numpy()
@@ -265,20 +269,33 @@ def main():
             output_batch = interp(output_batch).cpu().data.numpy()
 
         output_batch = output_batch.transpose(0,2,3,1)
+        output_batch1, output_batch2 = output_batch1.transpose(0,2,3,1), output_batch2.transpose(0,2,3,1)
         scoremap_batch = np.asarray(np.max(output_batch, axis=3))
         output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
+        output_batch1 = np.asarray(np.argmax(output_batch1, axis=3), dtype=np.uint8)
+        output_batch2 = np.asarray(np.argmax(output_batch2, axis=3), dtype=np.uint8)
         output_iterator = []
+        output_iterator1 = []
+        output_iterator2 = []
         heatmap_iterator = []
         scoremap_iterator = []
+        name1, name2 = [], []
 
         for i in range(output_batch.shape[0]):
             output_iterator.append(output_batch[i,:,:])
+            output_iterator1.append(output_batch1[i,:,:])
+            output_iterator2.append(output_batch2[i,:,:])
             heatmap_iterator.append(heatmap_batch[i,:,:]/np.max(heatmap_batch[i,:,:]))
             scoremap_iterator.append(1-scoremap_batch[i,:,:]/np.max(scoremap_batch[i,:,:]))
             name_tmp = name[i].split('/')[-1]
             name[i] = '%s/%s' % (args.save, name_tmp)
+            name1.append('%s/%s' % (args.save+'_a', name_tmp))
+            name2.append('%s/%s' % (args.save+'_p', name_tmp))
+
         with Pool(4) as p:
             p.map(save, zip(output_iterator, name) )
+            p.map(save, zip(output_iterator1, name1) )
+            p.map(save, zip(output_iterator2, name2) )
             p.map(save_heatmap, zip(heatmap_iterator, name) )
             p.map(save_scoremap, zip(scoremap_iterator, name) )
         del output_batch
@@ -292,3 +309,5 @@ if __name__ == '__main__':
         save_path = main()
     print('Time used: {} sec'.format(time.time()-tt))
     os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/val %s'%save_path)
+    os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/val %s_p'%save_path)
+    os.system('python compute_iou.py ./data/Cityscapes/data/gtFine/val %s_a'%save_path)

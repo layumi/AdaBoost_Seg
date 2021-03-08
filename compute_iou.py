@@ -56,7 +56,13 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     mIoUs = per_class_iu(hist)
     for ind_class in range(num_classes):
         print(('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2))))
-    print(('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
+
+    if pred_dir.endswith('_p'):
+        print(('Main Classifier: ===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
+    elif pred_dir.endswith('_a'):
+        print(('Auxiliary Classifier: ===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
+    else:
+        print(('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
     return mIoUs
 
 
