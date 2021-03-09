@@ -55,6 +55,8 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     
     mIoUs = per_class_iu(hist)
     for ind_class in range(num_classes):
+        if pred_dir.endswith('_p') or pred_dir.endswith('_a'):
+            break
         print(('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2))))
 
     if pred_dir.endswith('_p'):

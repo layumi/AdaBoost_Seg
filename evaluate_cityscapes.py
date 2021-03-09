@@ -141,6 +141,8 @@ def main():
 
     if not os.path.exists(args.save):
         os.makedirs(args.save)
+        os.makedirs(args.save+'_a')
+        os.makedirs(args.save+'_p')
 
     if args.model == 'DeepLab':
         model = DeeplabMulti(num_classes=args.num_classes, use_se = config['use_se'], train_bn = False, norm_style = config['norm_style'], use_blur = config['use_blur'])
