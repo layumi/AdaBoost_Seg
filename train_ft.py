@@ -166,6 +166,8 @@ def get_arguments():
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
+    parser.add_argument("--swa_every", type=int, default=5000, help="start from iteration")
+    parser.add_argument("--slow_fast", action='store_true', help="using slow_fast.")
     parser.add_argument("--ema", type=float, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
