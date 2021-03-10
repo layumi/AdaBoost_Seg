@@ -28,7 +28,6 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     with open(join(devkit_dir, 'info.json'), 'r') as fp:
       info = json.load(fp)
     num_classes = np.int(info['classes'])
-    print(('Num classes', num_classes))
     name_classes = np.array(info['label'], dtype=np.str)
     mapping = np.array(info['label2train'], dtype=np.int)
     hist = np.zeros((num_classes, num_classes))
@@ -64,7 +63,8 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     elif pred_dir.endswith('_a'):
         print(('Auxiliary Classifier: ===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
     else:
-        print(('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
+        print(('Num classes', num_classes))
+        print(('Fusion: ===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2))))
     return mIoUs
 
 

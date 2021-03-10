@@ -245,6 +245,7 @@ def main():
 
                 output1, output2 = model(inputs2)
                 output_batch += interp(sm(beta * output1 + alpha * output2))
+                output_batch1, output_batch2 = output_batch1+interp(output1), output_batch1+interp(output2)
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 output1, output2 = model(fliplr(inputs2))
@@ -301,6 +302,8 @@ def main():
             p.map(save_heatmap, zip(heatmap_iterator, name) )
             p.map(save_scoremap, zip(scoremap_iterator, name) )
         del output_batch
+        del output_batch1
+        del output_batch2
 
     
     return args.save

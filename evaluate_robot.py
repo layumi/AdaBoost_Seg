@@ -132,6 +132,8 @@ def main():
 
     if not os.path.exists(args.save):
         os.makedirs(args.save)
+        os.makedirs(args.save+'_a')
+        os.makedirs(args.save+'_p')
 
     if args.model == 'DeepLab':
         model = DeeplabMulti(num_classes=args.num_classes, use_se = config['use_se'], train_bn = False, norm_style = config['norm_style'], use_blur = config['use_blur'])
@@ -223,22 +225,26 @@ def main():
             with torch.no_grad():
                 output1, output2 = model(inputs)
                 output_batch = interp(sm(0.5* output1 + output2))
+                output_batch1, output_batch2 = interp(output1), interp(output2)
                 #output_batch = interp(sm(output1))
                 #output_batch = interp(sm(output2))
                 output1, output2 = model(fliplr(inputs))
                 output1, output2 = fliplr(output1), fliplr(output2)
                 output_batch += interp(sm(0.5 * output1 + output2))
+                output_batch1, output_batch2 = output_batch1+interp(output1), output_batch1+interp(output2)
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs
 
                 output1, output2 = model(inputs2)
                 output_batch += interp(sm(0.5* output1 + output2))
+                output_batch1, output_batch2 = output_batch1+interp(output1), output_batch1+interp(output2)
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 output1, output2 = model(fliplr(inputs2))
                 output1, output2 = fliplr(output1), fliplr(output2)
                 output_batch += interp(sm(0.5 * output1 + output2))
+                output_batch1, output_batch2 = output_batch1+interp(output1), output_batch1+interp(output2)
                 #output_batch += interp(sm(output1))
                 #output_batch += interp(sm(output2))
                 del output1, output2, inputs2
@@ -251,20 +257,35 @@ def main():
                 #del output1, output2, inputs3
 
                 output_batch = output_batch.cpu().data.numpy()
+                output_batch1, output_batch2  = output_batch1.cpu().data.numpy(), output_batch2.cpu().data.numpy()
         elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
             output_batch = model(Variable(image).cuda())
             output_batch = interp(output_batch).cpu().data.numpy()
 
         output_batch = output_batch.transpose(0,2,3,1)
+        output_batch1, output_batch2 = output_batch1.transpose(0,2,3,1), output_batch2.transpose(0,2,3,1)
         output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
+        output_batch1 = np.asarray(np.argmax(output_batch1, axis=3), dtype=np.uint8)
+        output_batch2 = np.asarray(np.argmax(output_batch2, axis=3), dtype=np.uint8)
         output_iterator = []
+        output_iterator1 = []
+        output_iterator2 = []
         for i in range(output_batch.shape[0]):
             output_iterator.append(output_batch[i,:,:])
+            output_iterator1.append(output_batch1[i,:,:])
+            output_iterator2.append(output_batch2[i,:,:])
             name_tmp = name[i].split('/')[-1]
             name[i] = '%s/%s' % (args.save, name_tmp)
+            name1.append('%s/%s' % (args.save+'_a', name_tmp))
+            name2.append('%s/%s' % (args.save+'_p', name_tmp))
+
         with Pool(4) as p:
             p.map(save, zip(output_iterator, name) )
+            p.map(save, zip(output_iterator1, name1) )
+            p.map(save, zip(output_iterator2, name2) )
         del output_batch
+        del output_batch1
+        del output_batch2
 
     
     return args.save
@@ -276,3 +297,5 @@ if __name__ == '__main__':
     print('Time used: {} sec'.format(time.time()-tt))
     devkit_path='dataset/robot_list'
     os.system('python compute_iou.py ./data/Oxford_Robot_ICCV19/anno %s --devkit_dir %s'%(save_path, devkit_path))
+    os.system('python compute_iou.py ./data/Oxford_Robot_ICCV19/anno %s_p --devkit_dir %s'%(save_path, devkit_path))
+    os.system('python compute_iou.py ./data/Oxford_Robot_ICCV19/anno %s_a --devkit_dir %s'%(save_path, devkit_path))
