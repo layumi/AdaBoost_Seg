@@ -166,6 +166,8 @@ def get_arguments():
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
+    parser.add_argument("--swa_every", type=int, default=5000, help="start from iteration")
+    parser.add_argument("--slow_fast", action='store_true', help="using slow_fast.")
     parser.add_argument("--ema", type=float, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
     parser.add_argument("--use-blur", action='store_true', help="use se block.")
@@ -395,23 +397,25 @@ def main():
             #torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
             #torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
-            if args.swa and i_iter >= swa_start:
+        if i_iter % args.swa_every == 0 and i_iter >= swa_start:
+            if args.swa:
                 Trainer.swa_model.cuda()
                 Trainer.swa_model.update_parameters(Trainer.G)
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
                 torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
+                if args.slow_fast:
+                    Trainer.G = deepcopy(Trainer.swa_model.module)
                 Trainer.swa_model.cpu()
 
-            if args.adaboost and i_iter >= swa_start:
-                # since in the phase 2, target and train is from the same data.
+            if args.adaboost:
                 with torch.no_grad():
                     weights = Trainer.make_sample_weights(targetloader2, previous_weights)
                 previous_weights = weights
                 print(torch.sum(weights))
                 sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
-                AD_trainloader = data.DataLoader(train_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
-                trainloader_iter = enumerate(AD_trainloader)
+                AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                targetloader_iter = enumerate(AD_targetloader)
 
     if args.tensorboard:
         writer.close()
