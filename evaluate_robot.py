@@ -270,6 +270,8 @@ def main():
         output_iterator = []
         output_iterator1 = []
         output_iterator2 = []
+        name1 = []
+        name2 = []
         for i in range(output_batch.shape[0]):
             output_iterator.append(output_batch[i,:,:])
             output_iterator1.append(output_batch1[i,:,:])
