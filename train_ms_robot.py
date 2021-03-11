@@ -16,6 +16,7 @@ import random
 import time
 import yaml
 import swa_utils
+import copy
 from tensorboardX import SummaryWriter
 
 from trainer_ms import AD_Trainer
@@ -414,7 +415,7 @@ def main():
                     swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
                 torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 if args.slow_fast:
-                    Trainer.G = deepcopy(Trainer.swa_model.module)
+                    Trainer.G = copy.deepcopy(Trainer.swa_model.module)
                 Trainer.swa_model.cpu()
 
             if args.adaboost:
