@@ -38,7 +38,7 @@ DATA_DIRECTORY = './data/Cityscapes/data'
 DATA_LIST_PATH = './dataset/cityscapes_list/train.txt'
 DROPRATE = 0.1
 IGNORE_LABEL = 255
-INPUT_SIZE = '1280,720'
+INPUT_SIZE = '1024,512'
 DATA_DIRECTORY_TARGET = './data/Oxford_Robot_ICCV19'
 DATA_LIST_PATH_TARGET = './dataset/robot_list/train.txt'
 INPUT_SIZE_TARGET = '1280,960'
@@ -360,7 +360,7 @@ def main():
                     loss_D_value1 = 0
                     loss_D_value2 = 0
 
-        del pred1, pred2, pred_target1, pred_target2
+        del pred1, pred2, pred_target1, pred_target2, images, images_t, labels, labels_t
 
         if args.tensorboard:
             scalar_info = {
