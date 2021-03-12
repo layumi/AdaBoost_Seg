@@ -353,7 +353,7 @@ def main():
                     loss_D_value1 = 0
                     loss_D_value2 = 0
 
-        del pred1, pred2, pred_target1, pred_target2
+        del pred1, pred2, pred_target1, pred_target2, images, images_t, labels, labels_t
 
         if args.tensorboard:
             scalar_info = {
