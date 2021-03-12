@@ -122,8 +122,7 @@ def main():
         config['use_blur'] = False
 
     args.model = config['model']
-    print('ModelType:%s'%args.model)
-    print('NormType:%s'%config['norm_style'])
+    print('ModelType:%s NormType:%s'% (args.model, config['norm_style']))
     gpu0 = args.gpu
     batchsize = args.batchsize
 
@@ -153,9 +152,11 @@ def main():
 
     try:
         model.load_state_dict(saved_state_dict)
+        print('single GPU model')
         model = torch.nn.DataParallel(model)
     except:
         model = torch.nn.DataParallel(model)
+        print('multiple GPU model')
         model.load_state_dict(saved_state_dict)
     model.eval()
     model.cuda(gpu0)
