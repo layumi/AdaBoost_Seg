@@ -260,9 +260,9 @@ def main():
     # init adaboost loader
     AD_targetloader = targetloader
 
-    targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+    targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(480, 960), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
                            batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
-    targetloader2_shuffle = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=True, mirror=True, set='train'),
+    targetloader2_shuffle = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(480, 960), resize_size=(1024, 512), mean=IMG_MEAN, scale=True, mirror=True, set='train'),
                            batch_size=24, shuffle=True, pin_memory=True, num_workers=4)
 
     # set up tensor board
