@@ -16,7 +16,7 @@ import time
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class cityscapesDataSet(data.Dataset):
-    def __init__(self, root, list_path, max_iters=None, resize_size=(1024, 512), crop_size=(512, 1024), mean=(128, 128, 128), scale=True, mirror=True, ignore_label=255, set='val', autoaug=False):
+    def __init__(self, root, list_path, max_iters=None, resize_size=(1024, 512), crop_size=(512, 1024), mean=(128, 128, 128), scale=False, mirror=True, ignore_label=255, set='val', autoaug=False):
         self.root = root
         self.list_path = list_path
         self.crop_size = crop_size
@@ -60,7 +60,13 @@ class cityscapesDataSet(data.Dataset):
 
         image, label = Image.open(datafiles["img"]).convert('RGB'), Image.open(datafiles["label"])
         # resize
-        image, label = image.resize(self.resize_size, Image.BICUBIC), label.resize(self.resize_size, Image.NEAREST)
+        if self.scale:
+            random_scale = 0.8 + random.random()*0.4 # 0.8 - 1.2
+            image = image.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.BICUBIC)
+            label = label.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.NEAREST)
+        else: 
+            image, label = image.resize(self.resize_size, Image.BICUBIC), label.resize(self.resize_size, Image.NEAREST)
+            
         if self.autoaug:
             policy = ImageNetPolicy()
             image = policy(image)
