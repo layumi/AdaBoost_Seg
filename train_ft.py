@@ -413,7 +413,7 @@ def main():
             if args.swa:
                 Trainer.swa_model.cuda()
                 Trainer.swa_model.update_parameters(Trainer.G)
-                Trainer.G.cpu() # save memory
+                #Trainer.G.cpu() # save memory
                 with torch.no_grad():
                     swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
                 torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
