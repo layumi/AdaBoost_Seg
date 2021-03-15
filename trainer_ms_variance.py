@@ -207,12 +207,12 @@ class AD_Trainer(nn.Module):
             return loss
 
     def make_sample_weights(self, imageloader, previous_weight = None):
-            print('update Adaboost Sampling')
+            print('>>> update Adaboost Sampling via Average Model')
             sm = torch.nn.Softmax(dim = 0)
             weight = torch.FloatTensor()
             kl_distance = nn.KLDivLoss( reduction = 'none')
             try:
-                #self.swa_model.eval().cud()
+                #self.swa_model.eval()
                 # train mode also helps to update bn
                 self.swa_model.train().cuda()
             except:
