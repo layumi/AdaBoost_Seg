@@ -50,8 +50,8 @@ class DeeplabVGG(nn.Module):
     def forward(self, x):
         x = self.features1(x)
         x1 = self.classifier1(x)
-        x = self.classifier(x)
-        x2 = self.classifier1(x)
+        x = self.features2(x)
+        x2 = self.classifier2(x)
         return x1, x2
 
     def optim_parameters(self, args):
