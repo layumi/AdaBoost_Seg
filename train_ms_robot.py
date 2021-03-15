@@ -176,6 +176,7 @@ def get_arguments():
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
     parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
+    parser.add_argument("--adatype", type=str, default='variance', choices=['variance','entropy'], help="adaboost type." )
     parser.add_argument("--sam", action='store_true', help="enable sam.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
     parser.add_argument("--often-balance", action='store_true', help="balance the apperance times.")
