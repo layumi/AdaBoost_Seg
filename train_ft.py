@@ -420,7 +420,7 @@ def main():
                 if args.slow_fast:
                     Trainer.G = copy.deepcopy(Trainer.swa_model.module)
                 Trainer.swa_model.cpu()
-                Trainer.G.cuda()
+                Trainer.G.train().cuda()
 
             if args.adaboost:
                 with torch.no_grad():
