@@ -43,7 +43,7 @@ class DeeplabVGG(nn.Module):
         self.features1 = nn.Sequential(*[features[i] for i in range(len(features))])
         self.features2 = nn.Sequential(*[ fc6, nn.ReLU(inplace=True), fc7, nn.ReLU(inplace=True)])
 
-        self.classifier1 = Classifier_Module(1024, [6,12,18,24],[6,12,18,24],num_classes)
+        self.classifier1 = Classifier_Module(512, [6,12,18,24],[6,12,18,24],num_classes)
         self.classifier2 = Classifier_Module(1024, [6,12,18,24],[6,12,18,24],num_classes)
 
 
