@@ -95,6 +95,12 @@ class AD_Trainer(nn.Module):
                     else:
                         new_params['.'.join(i_parts[0:])] = saved_state_dict[i]
                         print('%s is loaded from pre-trained weight.\n'%i_parts[0:])
+        elif args.model == 'DeepVGG':
+            self.G = DeeplabVGG(num_classes=args.num_classes)
+        else: 
+            print('Unkown Model Type.')
+            raise AssertionError
+            
         self.G.load_state_dict(new_params)
 
         self.D1 = MsImageDis(input_dim = args.num_classes, use_blur = args.use_blur).cuda() 
