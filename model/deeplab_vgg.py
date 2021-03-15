@@ -40,15 +40,19 @@ class DeeplabVGG(nn.Module):
         fc6 = nn.Conv2d(512, 1024, kernel_size=3, padding=4, dilation=4)
         fc7 = nn.Conv2d(1024, 1024, kernel_size=3, padding=4, dilation=4)
 
-        self.features = nn.Sequential(*([features[i] for i in range(len(features))] + [ fc6, nn.ReLU(inplace=True), fc7, nn.ReLU(inplace=True)]))
+        self.features1 = nn.Sequential(*[features[i] for i in range(len(features))])
+        self.features2 = nn.Sequential(*[ fc6, nn.ReLU(inplace=True), fc7, nn.ReLU(inplace=True)])
 
-        self.classifier = Classifier_Module(1024, [6,12,18,24],[6,12,18,24],num_classes)
+        self.classifier1 = Classifier_Module(1024, [6,12,18,24],[6,12,18,24],num_classes)
+        self.classifier2 = Classifier_Module(1024, [6,12,18,24],[6,12,18,24],num_classes)
 
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.features1(x)
+        x1 = self.classifier1(x)
         x = self.classifier(x)
-        return x
+        x2 = self.classifier1(x)
+        return x1, x2
 
     def optim_parameters(self, args):
         return self.parameters()
