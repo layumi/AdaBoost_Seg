@@ -207,7 +207,7 @@ class AD_Trainer(nn.Module):
             return loss
 
     def make_sample_weights(self, imageloader, previous_weight = None):
-            print('>>> update Adaboost Sampling via Average Model')
+            print('>>> update Adaboost Sampling via Average Model: %s'%self.adatype)
             sm = torch.nn.Softmax(dim = 0)
             weight = torch.FloatTensor()
             kl_distance = nn.KLDivLoss( reduction = 'none')
