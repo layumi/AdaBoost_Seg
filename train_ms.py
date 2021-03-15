@@ -418,6 +418,7 @@ def main():
                 torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 if args.slow_fast:
                     Trainer.G = copy.deepcopy(Trainer.swa_model.module)
+                Trainer.G.train()
                 Trainer.swa_model.cpu()
 
             if args.adaboost:
