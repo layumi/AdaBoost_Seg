@@ -3,6 +3,7 @@ from torch.utils import data, model_zoo
 import torch.optim as optim
 import torch.nn.functional as F
 from model.deeplab_multi import DeeplabMulti
+from model.deeplab_vgg import DeeplabVGG
 from model.discriminator import FCDiscriminator
 from model.ms_discriminator import MsImageDis
 import torch
