@@ -2,7 +2,6 @@ import numpy as np
 import torch
 from torch import nn
 from torchvision import models
-from 
 
 
 def NormLayer(norm_dim, norm_style = 'gn'):
@@ -66,6 +65,7 @@ class Classifier_Module(nn.Module):
         out = self.conv2d_list[0](x)
         for i in range(len(self.conv2d_list) - 1):
             out = torch.cat( (out, self.conv2d_list[i+1](x)), 1)
+        out = self.bottleneck(out)
         out = self.head(out)
         return out
 
