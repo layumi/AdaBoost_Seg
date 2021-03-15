@@ -405,8 +405,8 @@ def main():
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
             torch.save(Trainer.G.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
-            torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
-            torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
+            #torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
+            #torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
                 
         if i_iter % args.swa_every == 0 and i_iter >= swa_start:
@@ -418,10 +418,11 @@ def main():
                     swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
                 torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 if args.slow_fast:
-                    Trainer.G = copy.deepcopy(Trainer.swa_model.module)
+                    # Trainer.G = copy.deepcopy(Trainer.swa_model.module) #Optimizer will not update it.
+                    Trainer.G.load_state_dict(Trainer.swa_model.module.state_dict())
                 Trainer.swa_model.cpu()
                 Trainer.G.train().cuda()
-                
+
             if args.adaboost:
                 with torch.no_grad():
                     weights = Trainer.make_sample_weights(targetloader2, previous_weights)
