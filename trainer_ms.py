@@ -62,6 +62,7 @@ class AD_Trainer(nn.Module):
     def __init__(self, args):
         super(AD_Trainer, self).__init__()
         self.fp16 = args.fp16
+        self.adatype = args.adatype
         self.class_balance = args.class_balance
         self.often_balance = args.often_balance
         self.num_classes = args.num_classes
@@ -195,10 +196,21 @@ class AD_Trainer(nn.Module):
                     pred1, pred2 = self.swa_model(images)
                     pred1 = self.interp(pred1)
                     pred2 = self.interp(pred2)
-                    variance = torch.sum(kl_distance(self.log_sm(pred1),self.sm(pred2)), dim=1)
-                    mean_variance = torch.mean( torch.mean(variance, dim=2), dim=1)
-                    mean_variance = mean_variance.cpu()
-                    weight = torch.cat( (weight, mean_variance), dim = 0)
+                    if self.adatype == 'variance':
+                        variance = torch.sum(kl_distance(self.log_sm(pred1),self.sm(pred2)), dim=1)
+                        mean_variance = torch.mean( torch.mean(variance, dim=2), dim=1)
+                        mean_variance = mean_variance.cpu()
+                        weight = torch.cat( (weight, mean_variance), dim = 0)
+                    elif self.adatype == 'entropy':
+                        pred = 0.5*pred1 + pred2 
+                        self_entropy = torch.sum(kl_distance(self.log_sm(pred),self.sm(pred)), dim=1)
+                        mean_entropy = torch.mean( torch.mean(self_entropy, dim=2), dim=1)
+                        mean_entropy = mean_entropy.cpu()
+                        weight = torch.cat( (weight, mean_entropy), dim = 0)
+                    else: 
+                        print('undefined adatype')
+                        raise AssertionError
+                        
             if previous_weight is not None:
                 weight = (sm(weight) + previous_weight)*0.5
             else:
