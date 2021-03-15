@@ -203,7 +203,7 @@ def update_bn(loader, model, device=None):
         is assumed that :meth:`model.forward()` should be called on the first 
         element of the list or tuple corresponding to the data batch.
     """
-    print('updating batchnorm ...')
+    print('>>> updating batchnorm ...')
     momenta = {}
     for module in model.modules():
         if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
