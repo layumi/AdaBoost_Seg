@@ -39,7 +39,7 @@ class Classifier_Module(nn.Module):
         for dilation, padding in zip(dilation_series, padding_series):
             self.conv2d_list.append(
                 nn.Sequential(*[
-                nn.Conv2d(inplanes, 256, kernel_size=3, stride=1, padding=padding, dilation=dilation, bias=True), 
+                nn.Conv2d(dims_in, 256, kernel_size=3, stride=1, padding=padding, dilation=dilation, bias=True), 
                 NormLayer(256, norm_style),
                 nn.ReLU(inplace=True) ]))
 
@@ -55,6 +55,20 @@ class Classifier_Module(nn.Module):
         for m in self.conv2d_list:
             if isinstance(m, nn.Conv2d):
                 torch.nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+                m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d) or isinstance(m, nn.InstanceNorm2d) or isinstance(m, nn.GroupNorm):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+        for m in self.bottleneck:
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                torch.nn.init.kaiming_normal_(m.weight.data, a=0, mode='fan_out')
+                m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d) or isinstance(m, nn.InstanceNorm2d) or isinstance(m, nn.GroupNorm) or isinstance(m, nn.LayerNorm):
+                m.weight.data.fill_(1)
                 m.bias.data.zero_()
             
         for m in self.head:
