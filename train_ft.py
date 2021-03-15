@@ -414,11 +414,12 @@ def main():
                 Trainer.swa_model.cuda()
                 Trainer.swa_model.update_parameters(Trainer.G)
                 #Trainer.G.cpu() # save memory
-                with torch.no_grad():
-                    swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
+                #with torch.no_grad():
+                #    swa_utils.update_bn( targetloader2_shuffle, Trainer.swa_model, device = 'cuda')
                 torch.save(Trainer.swa_model.module.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_average.pth'))
                 if args.slow_fast:
-                    Trainer.G = copy.deepcopy(Trainer.swa_model.module)
+                    # Trainer.G = copy.deepcopy(Trainer.swa_model.module) #Optimizer will not update it.
+                    Trainer.G.load_state_dict(Trainer.swa_model.module.state_dict())
                 Trainer.swa_model.cpu()
                 Trainer.G.train().cuda()
 
