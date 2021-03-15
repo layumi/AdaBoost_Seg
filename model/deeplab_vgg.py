@@ -36,6 +36,11 @@ class Classifier_Module(nn.Module):
     def __init__(self, dims_in, dilation_series, padding_series, num_classes, norm_style = 'gn'):
         super(Classifier_Module, self).__init__()
         self.conv2d_list = nn.ModuleList()
+        self.conv2d_list.append(
+                nn.Sequential(*[
+                nn.Conv2d(dims_in, 256, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
+                NormLayer(256, norm_style),
+                nn.ReLU(inplace=True) ]))
         for dilation, padding in zip(dilation_series, padding_series):
             self.conv2d_list.append(
                 nn.Sequential(*[
