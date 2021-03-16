@@ -63,6 +63,7 @@ class AD_Trainer(nn.Module):
     def __init__(self, args):
         super(AD_Trainer, self).__init__()
         self.fp16 = args.fp16
+        self.adatype = args.adatype
         self.swa_start = args.swa_start
         self.class_balance = args.class_balance
         self.often_balance = args.often_balance
