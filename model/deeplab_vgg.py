@@ -92,7 +92,7 @@ class Classifier_Module(nn.Module):
 class DeeplabVGG(nn.Module):
     def __init__(self, num_classes, vgg16_caffe_path=None, pretrained=False):
         super(DeeplabVGG, self).__init__()
-        vgg = models.vgg16(pretrained=True)
+        vgg = models.vgg16_bn(pretrained=True)
         if pretrained:
             vgg.load_state_dict(torch.load(vgg16_caffe_path))
 
