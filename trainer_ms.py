@@ -210,9 +210,10 @@ class AD_Trainer(nn.Module):
                         weight = torch.cat( (weight, mean_variance), dim = 0)
                     elif self.adatype == 'entropy':
                         pred = 0.5*pred1 + pred2 
-                        self_entropy = torch.sum(kl_distance(self.log_sm(pred),self.sm(pred)), dim=1)
+                        self_entropy = torch.sum(-self.log_sm(pred)*self.sm(pred), dim=1)
                         mean_entropy = torch.mean( torch.mean(self_entropy, dim=2), dim=1)
                         mean_entropy = mean_entropy.cpu()
+                        print(mean_entropy)
                         weight = torch.cat( (weight, mean_entropy), dim = 0)
                     else: 
                         print('undefined adatype')
