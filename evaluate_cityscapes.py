@@ -150,7 +150,7 @@ def main():
         model = Res_Deeplab(num_classes=args.num_classes)
         if args.restore_from == RESTORE_FROM:
             args.restore_from = RESTORE_FROM_ORC
-    elif args.model == 'DeeplabVGG':
+    elif args.model == 'DeepVGG':
         model = DeeplabVGG(num_classes=args.num_classes)
         #if args.restore_from == RESTORE_FROM:
         #    args.restore_from = RESTORE_FROM_VGG
