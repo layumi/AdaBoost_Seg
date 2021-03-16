@@ -152,8 +152,8 @@ def main():
             args.restore_from = RESTORE_FROM_ORC
     elif args.model == 'DeeplabVGG':
         model = DeeplabVGG(num_classes=args.num_classes)
-        if args.restore_from == RESTORE_FROM:
-            args.restore_from = RESTORE_FROM_VGG
+        #if args.restore_from == RESTORE_FROM:
+        #    args.restore_from = RESTORE_FROM_VGG
 
     if args.restore_from[:4] == 'http' :
         saved_state_dict = model_zoo.load_url(args.restore_from)
