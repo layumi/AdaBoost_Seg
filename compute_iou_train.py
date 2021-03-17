@@ -46,6 +46,8 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
         label = label_mapping(label, mapping)
         if len(label.shape) == 3 and label.shape[2]==4:
             label = label[:,:,0]
+        interp = nn.Upsample( size=(640, 1280), mode='nearst', align_corners=True)
+        label = interp(label)
         if len(label.flatten()) != len(pred.flatten()):
             print(('Skipping: len(gt) = {:d}, len(pred) = {:d}, {:s}, {:s}'.format(len(label.flatten()), len(pred.flatten()), gt_imgs[ind], pred_imgs[ind])))
             continue
