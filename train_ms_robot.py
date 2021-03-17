@@ -238,7 +238,7 @@ def main():
     train_dataset = cityscapesDataSet(args.data_dir, args.data_list, max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
-                    scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug)
+                    scale=False, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug)
     train_number = len(train_dataset.img_ids)
     trainloader = data.DataLoader( train_dataset,
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
