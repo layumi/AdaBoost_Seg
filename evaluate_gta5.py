@@ -151,13 +151,14 @@ def main():
         print(image.shape)
 
         inputs = Variable(image).cuda()
-        if args.model == 'DeeplabMulti':
-            output1, output2 = model(inputs)
-            output_batch = interp(sm(0.5* output1 + output2)).cpu().data.numpy()
+        if args.model == 'DeepLab' or args.model == 'DeepVGG':
+            with torch.no_grad():
+                output1, output2 = model(inputs)
+                output_batch = interp(sm(0.5* output1 + output2)).cpu().data.numpy()
             #output1, output2 = model(fliplr(inputs))
             #output2 = fliplr(output2)
             #output_batch += interp(output2).cpu().data.numpy()
-        elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
+        elif args.model == 'Oracle':
             output_batch = model(Variable(image).cuda())
             output_batch = interp(output_batch).cpu().data.numpy()
 
