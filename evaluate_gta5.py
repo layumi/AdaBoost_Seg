@@ -25,7 +25,7 @@ IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 # We just use this file to evaluate the perfromance on the training set
 DATA_DIRECTORY = './data/GTA5'
-DATA_LIST_PATH = './dataset/gta5_list/val.txt'
+DATA_LIST_PATH = './dataset/gta5_list/train_short.txt'
 SAVE_PATH = './result/GTA5'
 
 IGNORE_LABEL = 255
@@ -180,4 +180,4 @@ if __name__ == '__main__':
     with torch.no_grad():
         save_path = main()
     devkit_path='dataset/gta5_list'
-    os.system('python compute_iou.py ./data/GTA5/labels/ %s  --devkit_dir %s'%(save_path, devkit_path))
+    os.system('python compute_iou_train.py ./data/GTA5/labels/ %s  --devkit_dir %s'%(save_path, devkit_path))
