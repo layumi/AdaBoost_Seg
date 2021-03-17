@@ -150,7 +150,7 @@ def main():
     testloader = data.DataLoader(robotDataSet(args.data_dir, args.data_list, crop_size=(960, 1280), resize_size=(1280, 960), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
-    scale = 1.25
+    scale = 0.8
     testloader2 = data.DataLoader(robotDataSet(args.data_dir, args.data_list, crop_size=(round(960*scale), round(1280*scale) ), resize_size=( round(1280*scale), round(960*scale)), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=batchsize, shuffle=False, pin_memory=True, num_workers=4)
 
