@@ -262,7 +262,7 @@ def main():
     AD_targetloader = targetloader
 
     targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(448, 896), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
+                           batch_size=8, shuffle=False, pin_memory=True, num_workers=4)
     targetloader2_shuffle = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(448, 896), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=True, set='train'),
                            batch_size=24, shuffle=True, pin_memory=True, num_workers=4)
 
