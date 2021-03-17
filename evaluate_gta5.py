@@ -148,7 +148,7 @@ def main():
         if (index*batchsize) % 100 == 0:
             print('%d processd' % (index*batchsize))
         image, _, _, name = batch
-        print(image.shape)
+        #print(image.shape)
 
         inputs = Variable(image).cuda()
         if args.model == 'DeepLab' or args.model == 'DeepVGG':
