@@ -139,9 +139,9 @@ def main():
 
 
     if version.parse(torch.__version__) >= version.parse('0.4.0'):
-        interp = nn.Upsample(size=(640, 1280 ), mode='bilinear', align_corners=True)
+        interp = nn.Upsample(size=(1046, 1914 ), mode='bilinear', align_corners=True)
     else:
-        interp = nn.Upsample(size=(640, 1280 ), mode='bilinear')
+        interp = nn.Upsample(size=(1046, 1914 ), mode='bilinear')
 
     sm = torch.nn.Softmax(dim = 1)
     for index, batch in enumerate(testloader):
