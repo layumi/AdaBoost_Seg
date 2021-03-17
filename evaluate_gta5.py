@@ -84,9 +84,17 @@ def get_arguments():
 
 def main():
     """Create the model and start the evaluation process."""
-
     args = get_arguments()
 
+    config_path = os.path.join(os.path.dirname(args.restore_from),'opts.yaml')
+    with open(config_path, 'r') as stream:
+        config = yaml.safe_load(stream)
+
+    if not 'use_blur' in config:
+        config['use_blur'] = False
+
+    args.model = config['model']
+    print('ModelType:%s NormType:%s'% (args.model, config['norm_style']))
     gpu0 = args.gpu
     batchsize = args.batchsize
 
@@ -95,17 +103,19 @@ def main():
 
     if not os.path.exists(args.save):
         os.makedirs(args.save)
+        os.makedirs(args.save+'_a')
+        os.makedirs(args.save+'_p')
 
-    if args.model == 'DeeplabMulti':
-        model = DeeplabMulti(num_classes=args.num_classes, train_bn = False, norm_style = 'in')
+    if args.model == 'DeepLab':
+        model = DeeplabMulti(num_classes=args.num_classes, use_se = config['use_se'], train_bn = False, norm_style = config['norm_style'], use_blur = config['use_blur'])
     elif args.model == 'Oracle':
         model = Res_Deeplab(num_classes=args.num_classes)
         if args.restore_from == RESTORE_FROM:
             args.restore_from = RESTORE_FROM_ORC
-    elif args.model == 'DeeplabVGG':
+    elif args.model == 'DeepVGG':
         model = DeeplabVGG(num_classes=args.num_classes)
-        if args.restore_from == RESTORE_FROM:
-            args.restore_from = RESTORE_FROM_VGG
+        #if args.restore_from == RESTORE_FROM:
+        #    args.restore_from = RESTORE_FROM_VGG
 
     if args.restore_from[:4] == 'http' :
         saved_state_dict = model_zoo.load_url(args.restore_from)
@@ -114,11 +124,14 @@ def main():
 
     try:
         model.load_state_dict(saved_state_dict)
+        print('single GPU model')
+        model = torch.nn.DataParallel(model)
     except:
         model = torch.nn.DataParallel(model)
+        print('multiple GPU model')
         model.load_state_dict(saved_state_dict)
     model.eval()
-    model.cuda()
+    model.cuda(gpu0)
 
     testloader = data.DataLoader(GTA5DataSet(args.data_dir, args.data_list, crop_size=(640, 1280), resize_size=(1280, 640), mean=IMG_MEAN, scale=False, mirror=False),
                                     batch_size=batchsize, shuffle=False, pin_memory=True)
