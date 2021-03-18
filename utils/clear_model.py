@@ -14,10 +14,10 @@ for f in os.listdir(root):
                     os.remove(dst)
 
             try:
-                if int(fff[5:10])<25000 or int(fff[5:10])==30000 or int(fff[5:10])==35000 or int(fff[5:10])==40000 or int(fff[5:10])==45000 or int(fff[5:10])>70000:
+                if not int(fff[5:10])%10000=5000:
                     dst = dir_name+'/'+fff
                     print(dst)
-                    os.remove(dst)
+                    #os.remove(dst)
             except:
                 continue
 
