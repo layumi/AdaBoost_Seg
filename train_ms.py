@@ -161,6 +161,7 @@ def get_arguments():
     parser.add_argument("--weight-decay", type=float, default=WEIGHT_DECAY,
                         help="Regularisation parameter for L2-loss.")
     parser.add_argument("--adam", action='store_true', help="use adam optimizer.")
+    parser.add_argument("--vggbn", action='store_true', help="use vgg16 with bn.")
     parser.add_argument("--warm-up", type=float, default=WARM_UP, help = 'warm up iteration')
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
