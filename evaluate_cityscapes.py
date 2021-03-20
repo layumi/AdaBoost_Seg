@@ -131,6 +131,9 @@ def main():
     if not 'use_blur' in config:
         config['use_blur'] = False
 
+    if not 'vgg_bn' in config:
+        config['vgg_bn'] = False
+
     args.model = config['model']
     print('ModelType:%s NormType:%s'% (args.model, config['norm_style']))
     gpu0 = args.gpu
@@ -151,7 +154,7 @@ def main():
         if args.restore_from == RESTORE_FROM:
             args.restore_from = RESTORE_FROM_ORC
     elif args.model == 'DeepVGG':
-        model = DeeplabVGG(num_classes=args.num_classes)
+        model = DeeplabVGG(num_classes=args.num_classes, vggbn = config['vggbn'])
         #if args.restore_from == RESTORE_FROM:
         #    args.restore_from = RESTORE_FROM_VGG
 
