@@ -97,7 +97,7 @@ class AD_Trainer(nn.Module):
                         print('%s is loaded from pre-trained weight.\n'%i_parts[0:])
             self.G.load_state_dict(new_params)
         elif args.model == 'DeepVGG':
-            self.G = DeeplabVGG(num_classes=args.num_classes，vggbn = args.vggbn)
+            self.G = DeeplabVGG(num_classes=args.num_classes, vggbn = args.vggbn)
         else: 
             print('Unkown Model Type.')
             raise AssertionError
