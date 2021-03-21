@@ -205,7 +205,10 @@ def main():
         inputs2 = image2.cuda()
         inputs3 = Variable(image3).cuda()
         print('\r>>>>Extracting feature...%03d/%03d'%(index*batchsize, NUM_STEPS), end='')
-
+        
+        if args.model == 'DeepVGG': # pytorch vgg16 accepts normalized inputs.
+            image, image2 = image/255.0, image2/255.0 
+      
         if args.dynamic_bn:
             momenta = {}
             for module in model.modules():
