@@ -205,6 +205,8 @@ def main():
         image, _, _, name = batch
         image2, _, _, name2 = batch2
         #image3, _, _, name3 = batch3
+        if args.model == 'DeepVGG': # pytorch vgg16 accepts normalized inputs.
+            image, image2 = image/255.0, image2/255.0 
 
         inputs = image.cuda()
         inputs2 = image2.cuda()
