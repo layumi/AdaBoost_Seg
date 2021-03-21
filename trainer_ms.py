@@ -308,10 +308,12 @@ class AD_Trainer(nn.Module):
             loss_long = 0.0 
             if self.lambda_long_copy>0: 
                 n, c, h, w = pred_target1.shape
+                self.swa_model.cuda()
                 with torch.no_grad(): 
                     pred_target1_swa, pred_target2_swa = self.swa_model(images_t)
                     pred_target1_swa = self.interp_target(pred_target1_swa)
                     pred_target2_swa = self.interp_target(pred_target2_swa)
+                self.swa_model.cpu()
                 mean_pred_swa = self.sm(0.5*pred_target1_swa + pred_target2_swa)
                 loss_long = ( self.kl_loss(self.log_sm(pred_target2) , mean_pred_swa)  + self.kl_loss(self.log_sm(pred_target1) , mean_pred_swa))/(n*h*w)
                 loss += self.lambda_long * loss_long
