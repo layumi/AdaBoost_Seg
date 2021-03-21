@@ -63,6 +63,7 @@ class AD_Trainer(nn.Module):
     def __init__(self, args):
         super(AD_Trainer, self).__init__()
         self.fp16 = args.fp16
+        self.model = args.model
         self.adatype = args.adatype
         self.class_balance = args.class_balance
         self.often_balance = args.often_balance
@@ -231,7 +232,7 @@ class AD_Trainer(nn.Module):
     def gen_update(self, images, images_t, labels, labels_t, i_iter):
             self.gen_opt.zero_grad()
 
-            if args.model == 'DeepVGG': # pytorch vgg16 accepts normalized inputs.
+            if self.model == 'DeepVGG': # pytorch vgg16 accepts normalized inputs.
                 images, images_t = images/255.0, images_t/255.0 
                 
             pred1, pred2 = self.G(images)
