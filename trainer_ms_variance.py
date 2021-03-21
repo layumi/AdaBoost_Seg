@@ -256,7 +256,10 @@ class AD_Trainer(nn.Module):
 
     def gen_update(self, images, images_t, labels, labels_t, i_iter):
             self.gen_opt.zero_grad()
-
+            
+            if args.model == 'DeepVGG': # pytorch vgg16 accepts normalized inputs.
+                images, images_t = images/255.0, images_t/255.0 
+                
             pred1, pred2 = self.G(images)
             pred1 = self.interp(pred1)
             pred2 = self.interp(pred2)
