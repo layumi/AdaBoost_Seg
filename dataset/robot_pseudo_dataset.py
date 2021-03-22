@@ -68,7 +68,7 @@ class robot_pseudo_DataSet(data.Dataset):
 
         image = Image.open(datafiles["img"]).convert('RGB')
         label = Image.open(datafiles["label"])
-        score = np.asarray(Image.open(datafiles["score"]),np.uint8)
+        score = np.asarray(Image.open(datafiles["score"]),np.int)
         
             
         if self.scale:
