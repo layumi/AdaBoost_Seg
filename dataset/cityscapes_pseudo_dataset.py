@@ -17,6 +17,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 class cityscapes_pseudo_DataSet(data.Dataset):
     def __init__(self, root, list_path, max_iters=None, resize_size=(1024, 512), crop_size=(512, 1024), mean=(128, 128, 128), scale=False, mirror=True, ignore_label=255, set='val', autoaug=False, synthia=False, threshold = 1.0):
         self.root = root
+        self.threshold = threshold
         self.list_path = list_path
         self.crop_size = crop_size
         self.scale = scale
@@ -43,15 +44,14 @@ class cityscapes_pseudo_DataSet(data.Dataset):
         for name in self.img_ids:
             img_file = osp.join(self.root, "leftImg8bit/%s/%s" % (self.set, name))
             label_file = osp.join(self.root, "pseudo_FULL/%s/%s" % (self.set, name ))
-            if threshold != 1.0:
-                label_file = osp.join(self.root, "pseudo_%.1f/%s/%s" % (threshold, self.set, name ))
+            score_file = osp.join(self.root, "pseudo/%s/%s_score.png" % (self.set, name ))
             if synthia:
                 label_file = osp.join(self.root, "pseudo_SYNTHIA/%s/%s" % (self.set, name ))
-                if threshold != 1.0:
-                     label_file = osp.join(self.root, "pseudo_SYNTHIA_%.1f/%s/%s" % (threshold, self.set, name ))
+                score_file = osp.join(self.root, "pseudo_SYNTHIA/%s/%s_score.png" % (self.set, name ))
             self.files.append({
                 "img": img_file,
                 "label": label_file,
+                "score": score_file,
                 "name": name
             })
 
@@ -63,8 +63,13 @@ class cityscapes_pseudo_DataSet(data.Dataset):
 
         image = Image.open(datafiles["img"]).convert('RGB')
         label = Image.open(datafiles["label"])
+        score = Image.open(datafiles["score"])
         name = datafiles["name"]
 
+        # threshold 
+        if self.threshold<1.0:
+            label[score<(self.threshold*100)] = 255
+            
         # resize
         if self.scale:
             random_scale = 0.8 + random.random()*0.4 # 0.8 - 1.2
