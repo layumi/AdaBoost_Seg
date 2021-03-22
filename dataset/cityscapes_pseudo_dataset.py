@@ -66,31 +66,33 @@ class cityscapes_pseudo_DataSet(data.Dataset):
         score = Image.open(datafiles["score"])
         name = datafiles["name"]
 
-        # threshold 
-        if self.threshold<1.0:
-            label[score<(self.threshold*100)] = 255
             
         # resize
         if self.scale:
             random_scale = 0.8 + random.random()*0.4 # 0.8 - 1.2
             image = image.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.BICUBIC)
             label = label.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.NEAREST)
+            score = score.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.NEAREST)
         else:
             image = image.resize( ( self.resize_size[0], self.resize_size[1] ) , Image.BICUBIC)
             label = label.resize( ( self.resize_size[0], self.resize_size[1] ) , Image.NEAREST)
+            score = score.resize( ( self.resize_size[0], self.resize_size[1] ) , Image.NEAREST)
 
         if self.autoaug:
             policy = ImageNetPolicy()
             image = policy(image)
 
-        image = np.asarray(image, np.float32)
-        label = np.asarray(label, np.uint8)
+        image = np.array(image, np.float32)
+        label = np.array(label, np.uint8)
 
         # re-assign labels to match the format of Cityscapes
         #label_copy = 255 * np.ones(label.shape, dtype=np.float32)
         #for k, v in list(self.id_to_trainid.items()):
         #    label_copy[label == k] = v
         label_copy = label
+        # threshold 
+        if self.threshold<1.0:
+            label_copy[score<(self.threshold*100)] = 255        
 
         size = image.shape
         image = image[:, :, ::-1]  # change to BGR
