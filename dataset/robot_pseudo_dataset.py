@@ -82,14 +82,14 @@ class robot_pseudo_DataSet(data.Dataset):
 
         label = np.asarray(label, np.uint8)
         score = np.asarray(score, np.uint8)
-        # threshold 
-        if self.threshold<1.0:
-            label[score<(self.threshold*100)] = 255
             
         # re-assign labels to match the format of Cityscapes
         label_copy = 255 * np.ones(label.shape, dtype=np.uint8)
         for k, v in list(self.id_to_trainid.items()):
             label_copy[label == k] = v
+        # threshold 
+        if self.threshold<1.0:
+            label_copy[score<(self.threshold*100)] = 255
             
         if self.autoaug:
             policy = ImageNetPolicy()
