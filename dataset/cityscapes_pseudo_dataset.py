@@ -84,6 +84,7 @@ class cityscapes_pseudo_DataSet(data.Dataset):
 
         image = np.array(image, np.float32)
         label = np.array(label, np.uint8)
+        score = np.array(score, np.uint8)
 
         # re-assign labels to match the format of Cityscapes
         #label_copy = 255 * np.ones(label.shape, dtype=np.float32)
