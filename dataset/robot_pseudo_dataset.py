@@ -68,7 +68,7 @@ class robot_pseudo_DataSet(data.Dataset):
 
         image = Image.open(datafiles["img"]).convert('RGB')
         label = Image.open(datafiles["label"])
-        score = Image.open(datafiles["score"])
+        score = numpy.array(Image.open(datafiles["score"]),dtype=uint8)
         
         # threshold 
         if self.threshold<1.0:
