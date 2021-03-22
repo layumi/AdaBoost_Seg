@@ -174,6 +174,7 @@ def main():
                 output1, output2 = fliplr(output1), fliplr(output2)
                 output_batch += interp(sm(0.5 * output1 + output2))
                 del output1, output2, inputs2
+                output_batch = sm(output_batch) #new add
                 output_batch = output_batch.cpu().data.numpy()
         elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
             output_batch = model(Variable(image).cuda())
@@ -183,14 +184,17 @@ def main():
         #output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
         output_batch = output_batch.transpose(0,2,3,1)
         score_batch = np.max(output_batch, axis=3)
+        score_batch = np.asarray(np.round(score_batch*100), dtype=np.uint8)
         output_batch = np.asarray(np.argmax(output_batch, axis=3), dtype=np.uint8)
         output_batch[score_batch<3.6] = 255  #3.6 = 4*0.9
 
 
         for i in range(output_batch.shape[0]):
             output = output_batch[i,:,:]
+            score = score_batch[i,:,:]
             output_col = colorize_mask(output)
             output = Image.fromarray(output)
+            score = Image.fromarray(score)
 
             name_tmp = name[i].split('/')[-1]
             dir_name = name[i].split('/')[-2]
@@ -200,6 +204,7 @@ def main():
             if not os.path.isdir(save_path):
                 os.mkdir(save_path)
             output.save('%s/%s' % (save_path, name_tmp))
+            score.save('%s/%s_score.png' % (save_path, name_tmp))
             print('%s/%s' % (save_path, name_tmp))
             output_col.save('%s/%s_color.png' % (save_path, name_tmp.split('.')[0]))
 

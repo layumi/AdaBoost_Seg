@@ -17,7 +17,6 @@ from model.deeplab_vgg import DeeplabVGG
 from dataset.robot_dataset import robotDataSet
 from collections import OrderedDict
 import os
-from scipy.io import savemat
 from PIL import Image
 from utils.tool import fliplr
 import matplotlib.pyplot as plt
