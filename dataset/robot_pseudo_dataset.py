@@ -68,21 +68,23 @@ class robot_pseudo_DataSet(data.Dataset):
 
         image = Image.open(datafiles["img"]).convert('RGB')
         label = Image.open(datafiles["label"])
-        score = np.asarray(Image.open(datafiles["score"]),np.uint8)
-        
-         # threshold 
-        if self.threshold<1.0:
-            label[score<(self.threshold*100)] = 255
+        score = Image.open(datafiles["score"])
             
         if self.scale:
             random_scale = 0.8 + random.random()*0.4 # 0.8 - 1.2
             image = image.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.BICUBIC)
             label = label.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.NEAREST)
+            score = score.resize( ( round(self.resize_size[0] * random_scale), round(self.resize_size[1] * random_scale)) , Image.NEAREST)
         else:
             image = image.resize( ( self.resize_size[0], self.resize_size[1] ) , Image.BICUBIC)
             label = label.resize( ( self.resize_size[0], self.resize_size[1] ) , Image.NEAREST)
+            score = score.resize( ( self.resize_size[0], self.resize_size[1] ) , Image.NEAREST)
 
         label = np.asarray(label, np.uint8)
+        score = np.asarray(score, np.uint8)
+        # threshold 
+        if self.threshold<1.0:
+            label[score<(self.threshold*100)] = 255
             
         # re-assign labels to match the format of Cityscapes
         label_copy = 255 * np.ones(label.shape, dtype=np.uint8)
