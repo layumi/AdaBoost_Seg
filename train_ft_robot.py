@@ -347,6 +347,20 @@ def main():
                 loss_adv_target_value2 += loss_adv_target2 / args.iter_size
                 loss_me_value = loss_me
 
+                if args.fp16:
+                    with amp.scale_loss(loss, self.gen_opt) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
+                    
+                if args.sam: # second forward-backward pass
+                    Trainer.gen_opt.first_step(zero_grad=True)
+                    loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)
+                    loss.backward()  # make sure to do a full forward pass
+                    Trainer.gen_opt.second_step(zero_grad=True)
+                else:
+                    Trainer.gen_opt.step()
+                    
                 if args.lambda_adv_target1 > 0 and args.lambda_adv_target2 > 0:
                     loss_D1, loss_D2 = Trainer.dis_update(pred1, pred2, pred_target1, pred_target2)
                     loss_D_value1 += loss_D1.item()
