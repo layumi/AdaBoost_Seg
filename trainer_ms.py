@@ -204,6 +204,7 @@ class AD_Trainer(nn.Module):
                 for images, _, _, _ in tq:
                     images = images.cuda()
                     if self.recent: # Ablation study 
+                        self.swa_model.cpu()
                         self.G.train().cuda()
                         pred1, pred2 = self.G(images)
                     else:
