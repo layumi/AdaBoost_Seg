@@ -164,6 +164,7 @@ def get_arguments():
     parser.add_argument("--vggbn", action='store_true', help="use vgg16 with bn.")
     parser.add_argument("--warm-up", type=float, default=WARM_UP, help = 'warm up iteration')
     parser.add_argument("--cpu", action='store_true', help="choose to use cpu device.")
+    parser.add_argument("--recent", action='store_true', help="choose recent model to update data sampler.")
     parser.add_argument("--swa", action='store_true', help="using moving average.")
     parser.add_argument("--swa_start", type=int, default=0, help="start from iteration")
     parser.add_argument("--swa_every", type=int, default=5000, help="start from iteration")

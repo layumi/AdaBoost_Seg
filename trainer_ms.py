@@ -63,6 +63,7 @@ class AD_Trainer(nn.Module):
     def __init__(self, args):
         super(AD_Trainer, self).__init__()
         self.fp16 = args.fp16
+        self.recent = args.recent
         self.model = args.model
         self.adatype = args.adatype
         self.class_balance = args.class_balance
@@ -188,6 +189,7 @@ class AD_Trainer(nn.Module):
             sm = torch.nn.Softmax(dim = 0)
             weight = torch.FloatTensor()
             kl_distance = nn.KLDivLoss( reduction = 'none')
+
             try: 
                 #self.swa_model.eval()
                 self.swa_model.train().cuda()
@@ -201,7 +203,11 @@ class AD_Trainer(nn.Module):
             with tqdm.tqdm(imageloader, ascii=True) as tq:
                 for images, _, _, _ in tq:
                     images = images.cuda()
-                    pred1, pred2 = self.swa_model(images)
+                    if self.recent: # Ablation study 
+                        self.G.train().cuda()
+                        pred1, pred2 = self.G(images)
+                    else:
+                        pred1, pred2 = self.swa_model(images)
                     pred1 = self.interp(pred1)
                     pred2 = self.interp(pred2)
                     if self.adatype == 'variance':
