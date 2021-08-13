@@ -63,6 +63,10 @@ Alternatively, you could download extra two datasets from [SYNTHIA] and [OxfordR
  ### The Key Code
  Core code is relatively simple, and could be directly applied to other works. 
  
+ Adaptive Data Sampler: https://github.com/layumi/AdaBoost_Seg/blob/master/train_ms.py#L429-L436 
+ 
+ Student Aggregation: https://github.com/layumi/AdaBoost_Seg/blob/master/train_ms.py#L415-L427 
+ 
  
  ### Related Works
  We also would like to thank great works as follows:
