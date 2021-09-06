@@ -62,7 +62,7 @@ Alternatively, you could download extra two datasets from [SYNTHIA] and [OxfordR
 
 ### Training 
 
-- GTA5 to Cityscapes (ResNet-101)
+- **GTA5 to Cityscapes** (ResNet-101)
 
 Stage-I: (around 49.0%)
 ```bash
@@ -79,7 +79,7 @@ python generate_plabel_cityscapes.py --restore ./snapshots/ReRUN_Adaboost_SWA_SE
 python train_ft.py --snapshot-dir ./snapshots/Adaboost_1280x640_restore_ft48_GN_batchsize2_960x480_pp_ms_me0_classbalance7_kl0_lr4_drop0.2_seg0.5_BN_80_255_0.8_Noaug_swa2.5W_t97 --restore-from ./snapshots/ReRUN_Adaboost_SWA_SE_GN_batchsize2_1024x512_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5_swa0/GTA5_40000_average.pth  --drop 0.2 --warm-up 5000 --batch-size 2 --learning-rate 4e-4 --crop-size 960,480 --lambda-seg 0.5 --lambda-adv-target1 0 --lambda-adv-target2 0 --lambda-me-target 0 --lambda-kl-target 0 --norm-style gn --class-balance --only-hard-label 80 --max-value 7 --gpu-ids 0 --often-balance --use-se --input-size 1280,640 --train_bn --autoaug False --swa --adaboost --swa_start 25000 --threshold 97
  ```
  
-- SYNTHIA to Cityscapes
+- **SYNTHIA to Cityscapes**
 
 Stage-I: 
 ```bash 
@@ -96,16 +96,16 @@ Stage-II:
 python train_ft_synthia.py --snapshot-dir ./snapshots/Cosine_Adaboost_SY_1280x640_restore_ft_GN_batchsize8_512x256_pp_ms_me0_classbalance7_kl0.1_lr8_drop0.1_seg0.5_BN_255_Noaug_t777_swa2.5W --restore ./snapshots/AdaBoost_SWA_SY_SE_GN_batchsize2_1024x512_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5_power0.5/GTA5_50000_average.pth --drop 0.1 --warm-up 5000 --batch-size 8 --learning-rate 8e-4 --crop-size 512,256 --lambda-seg 0.5 --lambda-adv-target1 0 --lambda-adv-target2 0 --lambda-me-target 0 --lambda-kl-target 0 --norm-style gn --class-balance --only-hard-label 50 --max-value 7 --gpu-ids 0 --often-balance  --use-se  --input-size 1280,640    --autoaug False   --swa --swa_start 25000 --threshold 777 --adaboost --train_bn  --cosine
 ```
 
-- Cityscapes to Oxford RobotCar 
+- **Cityscapes to Oxford RobotCar** 
 
-Stage-I: 
+Stage-I: (around 73.80%) higher than paper.
 ```bash 
-python train_ms_robot.py --snapshot-dir ./snapshots/Adaboost_SWA1.5W_Robot_SE_GN_batchsize2_960x480_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5  --drop 0.1 --warm-up 5000 --batch-size 2 --learning-rate 2e-4 --crop-size 960,480 --lambda-seg 0.5  --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001   --lambda-me-target 0  --lambda-kl-target 0.1  --norm-style gn  --class-balance  --only-hard-label 80  --max-value 7  --gpu-ids 0  --often-balance  --use-se  --swa --swa_start 15000 --adaboost
+python train_ms_robot.py --snapshot-dir ./snapshots/Adaboost_SWA3W_Robot_SE_GN_batchsize6_adapative_kl0.1_sam_lr6  --drop 0.1 --warm-up 5000 --batch-size 6 --learning-rate 6e-4 --crop-size 800,400 --lambda-seg 0.5  --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001   --lambda-me-target 0  --lambda-kl-target 0.1  --norm-style gn  --class-balance  --only-hard-label 80  --max-value 7  --gpu-ids 0,1,2  --often-balance  --use-se  --swa --swa_start 30000 --adaboost  --sam
 ```
 
 Generate Pseudo Label:
 ```bash
- python generate_plabel_robot.py --restore ./snapshots/Adaboost_SWA1.5W_Robot_SE_GN_batchsize2_960x480_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5/GTA5_60000_average.pth
+python generate_plabel_robot.py --restore ./snapshots/Adaboost_SWA3W_Robot_SE_GN_batchsize6_adapative_kl0.1_sam_lr6/GTA5_70000_average.pth
 ```
  
 Stage-II: (around 75.62%) 
