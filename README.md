@@ -24,7 +24,7 @@ In this repo, we provide the code for the paper [Adaptive Boosting for Domain Ad
 ### Prerequisites
 - Python 3.6
 - GPU Memory >= 14G (e.g.,RTX6000 or V100) 
-- Pytorch or [Paddlepaddle](https://www.paddlepaddle.org.cn/)
+- Pytorch 
 
 
 ### Prepare Data
@@ -83,6 +83,12 @@ python train_ft.py --snapshot-dir ./snapshots/Adaboost_1280x640_restore_ft48_GN_
  ```bash
  python evaluate_cityscapes.py --restore-from ./snapshots/ReRUN_Adaboost_SWA_SE_GN_batchsize2_1024x512_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5_swa0/GTA5_40000_average.pth
  ```
+ 
+ ### Trained Model
+ The trained model is available at [Wait]
+
+ - The folder with `SY` in name is for SYNTHIA-to-Cityscapes
+ - The folder with `RB` in name is for Cityscapes-to-Robot Car
  
  ### The Key Code
  Core code is relatively simple, and could be directly applied to other works. 
