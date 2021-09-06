@@ -62,7 +62,7 @@ Alternatively, you could download extra two datasets from [SYNTHIA] and [OxfordR
 
 ### Training 
 
-- GTA5 to Cityscapes
+- GTA5 to Cityscapes (ResNet-101)
 
 Stage-I: (around 49.0%)
 ```bash
@@ -78,6 +78,15 @@ python generate_plabel_cityscapes.py --restore ./snapshots/ReRUN_Adaboost_SWA_SE
  ```bash
 python train_ft.py --snapshot-dir ./snapshots/Adaboost_1280x640_restore_ft48_GN_batchsize2_960x480_pp_ms_me0_classbalance7_kl0_lr4_drop0.2_seg0.5_BN_80_255_0.8_Noaug_swa2.5W_t97 --restore-from ./snapshots/ReRUN_Adaboost_SWA_SE_GN_batchsize2_1024x512_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5_swa0/GTA5_40000_average.pth  --drop 0.2 --warm-up 5000 --batch-size 2 --learning-rate 4e-4 --crop-size 960,480 --lambda-seg 0.5 --lambda-adv-target1 0 --lambda-adv-target2 0 --lambda-me-target 0 --lambda-kl-target 0 --norm-style gn --class-balance --only-hard-label 80 --max-value 7 --gpu-ids 0 --often-balance --use-se --input-size 1280,640 --train_bn --autoaug False --swa --adaboost --swa_start 25000 --threshold 97
  ```
+ 
+### Ablation Studies
+
+- GTA5 to Cityscapes (VGG-16)
+
+Stage-I: (around 39.5%)
+```bash
+python train_ms.py --snapshot-dir ./snapshots/255VGGBN_Adaboost_SWA_SE_GN_batchsize3_1024x512_pp_ms_me0_classbalance7_kl0.1_lr3_drop0.1_seg0.5_swa0_auto  --drop 0.1 --warm-up 5000 --batch-size 3 --learning-rate 3e-4 --crop-size 1024,512 --lambda-seg 0.5  --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001   --lambda-me-target 0  --lambda-kl-target 0.1  --norm-style gn  --class-balance  --only-hard-label 80  --max-value 7  --gpu-ids 0,1,2  --often-balance  --use-se  --swa  --swa_start 0 --adaboost  --model DeepVGG --autoaug 
+```
  
   ### Testing
  ```bash
