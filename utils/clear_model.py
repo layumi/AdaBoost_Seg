@@ -5,6 +5,11 @@ nn = []
 for f in os.listdir(root):
     for ff in os.listdir(root+f):
         dir_name = root+f
+        if len(os.listdir(dir_name)) == 1:
+            print(dir_name)
+            os.system('rm -r %s'%dir_name)
+            continue
+
         for fff in os.listdir(dir_name):
             if fff =='opts.yaml' or fff=='GTA5_100000.pth':
                 continue
