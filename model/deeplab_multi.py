@@ -42,9 +42,9 @@ class SEBlock(nn.Module):
                 nn.Sigmoid()
         )
     def forward(self, x):
-        xx = self.global_pool(x)
-        xx = xx.view(xx.size(0), xx.size(1))
-        se_weight = self.se(xx).unsqueeze(-1).unsqueeze(-1)
+        se_weight = self.global_pool(x)
+        se_weight = se_weight.view(se_weight.size(0), se_weight.size(1))
+        se_weight = self.se(se_weight).unsqueeze(-1).unsqueeze(-1)
         return x.mul(se_weight)
 
 class BasicBlock(nn.Module):
@@ -61,8 +61,6 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-        residual = x
-
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
@@ -71,9 +69,9 @@ class BasicBlock(nn.Module):
         out = self.bn2(out)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
+            out += self.downsample(x)
+        else:
+            out += x
         out = self.relu(out)
 
         return out
@@ -104,26 +102,20 @@ class Bottleneck(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
+        out = self.bn1(self.conv1(x))
         out = self.relu(out)
 
-        out = self.conv2(out)
-        out = self.bn2(out)
+        out = self.bn2(self.conv2(out))
         out = self.relu(out)
 
         out = self.conv3(out)
         out = self.bn3(out)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
-        out = self.relu(out)
-
-        return out
+            out += self.downsample(x)
+        else:
+            out += x
+        return self.relu(out)
 
 
 class Classifier_Module(nn.Module):
@@ -187,8 +179,7 @@ class Classifier_Module(nn.Module):
         for i in range(len(self.conv2d_list) - 1):
             out = torch.cat( (out, self.conv2d_list[i+1](x)), 1)
         out = self.bottleneck(out)
-        out = self.head(out)
-        return out
+        return self.head(out)
 
 
 class ResNetMulti(nn.Module):
@@ -248,6 +239,7 @@ class ResNetMulti(nn.Module):
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, dilation=dilation, downsample = None, train_bn = self.train_bn))
 
+        del downsample
         return nn.Sequential(*layers)
 
     def _make_pred_layer(self, block, inplanes, dilation_series, padding_series, num_classes, norm_style, droprate, use_se):
@@ -264,10 +256,9 @@ class ResNetMulti(nn.Module):
         x = self.layer3(x)
         x1 = self.layer5(x)
 
-        x2 = torch.cat((self.layer4(x),x), 1)
-        x2 = self.layer6(x2)
-
-        return x1, x2
+        x = torch.cat((self.layer4(x),x), 1)
+        x = self.layer6(x)
+        return x1, x # x1, x2
 
     def get_1x_lr_params_NOscale(self):
         """

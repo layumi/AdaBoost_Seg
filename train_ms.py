@@ -25,6 +25,7 @@ from utils.tool import adjust_learning_rate, adjust_learning_rate_D, Timer
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 
+
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 
 AUTOAUG = False
@@ -337,11 +338,11 @@ def main():
                 _, batch_t = targetloader_iter.__next__()
 
             images, labels, _, _ = batch
-            images = images.cuda()
-            labels = labels.long().cuda()
+            images = images.cuda().detach()
+            labels = labels.long().cuda().detach()
             images_t, labels_t, _, _ = batch_t
-            images_t = images_t.cuda()
-            labels_t = labels_t.long().cuda()
+            images_t = images_t.cuda().detach()
+            labels_t = labels_t.long().cuda().detach()
 
             with Timer("Elapsed time in update: %f"):
                 loss, loss_seg1, loss_seg2, loss_adv_target1, loss_adv_target2, loss_me, loss_kl, pred1, pred2, pred_target1, pred_target2, val_loss = Trainer.gen_update(images, images_t, labels, labels_t, i_iter)

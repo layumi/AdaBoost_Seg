@@ -257,10 +257,12 @@ class AD_Trainer(nn.Module):
                 labels2 = self.update_label(labels.clone(), pred2)
                 loss_seg1 = self.seg_loss(pred1, labels1)
                 loss_seg2 = self.seg_loss(pred2, labels2)
+                del labels1, labels2  # save memory 
             else:
                 loss_seg1 = self.seg_loss(pred1, labels)
                 loss_seg2 = self.seg_loss(pred2, labels)
- 
+
+            del images, labels # save memory
             loss = loss_seg2 + self.lambda_seg * loss_seg1
 
             # target
