@@ -22,11 +22,11 @@ for f in os.listdir(root):
                 if int(fff[5:10])//10000==1 and not fff.endswith('average.pth'):
                     dst = dir_name+'/'+fff
                     print(dst)
-                    #os.remove(dst)
+                    os.remove(dst)
                 if not(int(fff[5:10])%10000==0) and not fff.endswith('average.pth'):
                     dst = dir_name+'/'+fff
                     print(dst)
-                    #os.remove(dst)
+                    os.remove(dst)
             except:
                 continue
 

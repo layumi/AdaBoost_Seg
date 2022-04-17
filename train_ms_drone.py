@@ -22,7 +22,7 @@ from tensorboardX import SummaryWriter
 from trainer_ms import AD_Trainer
 from utils.loss import CrossEntropy2d
 from utils.tool import adjust_learning_rate, adjust_learning_rate_D, Timer 
-from dataset.gta5_dataset import GTA5DataSet
+from dataset.drone_dataset import DroneDataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
@@ -34,8 +34,8 @@ MODEL = 'DeepLab'
 BATCH_SIZE = 16
 ITER_SIZE = 1
 NUM_WORKERS = 2
-DATA_DIRECTORY = './data/GTA5'
-DATA_LIST_PATH = './dataset/gta5_list/train.txt'
+DATA_DIRECTORY = './data/drone'
+DATA_LIST_PATH = './dataset/drone_list/train.txt'
 DROPRATE = 0.1
 IGNORE_LABEL = 255
 INPUT_SIZE = '1280,720'
@@ -123,7 +123,7 @@ def get_arguments():
     parser.add_argument("--lambda-me-target", type=float, default=LAMBDA_ME_TARGET,
                         help="lambda_me for minimize cross entropy loss on target.")
     parser.add_argument("--lambda-kl-target", type=float, default=LAMBDA_KL_TARGET,
-                        help="lambda_me for minimize kl loss on target.")
+                        help="lambda_kl for minimize kl loss on target.")
     parser.add_argument("--lambda-long", type=float, default=0,
                         help="lambda_long for minimize long-term consistency loss on target.")
     parser.add_argument("--momentum", type=float, default=MOMENTUM,
@@ -171,10 +171,9 @@ def get_arguments():
     parser.add_argument("--slow_fast", action='store_true', help="using slow_fast.")
     parser.add_argument("--ema", type=float, default=0, help="start from iteration")
     parser.add_argument("--class-balance", action='store_true', help="class balance.")
+    parser.add_argument("--use-blur", action='store_true', help="use se block.")
     parser.add_argument("--use-se", action='store_true', help="use se block.")
-    parser.add_argument("--use-blur", action='store_true', help="use blur pooling.")
     parser.add_argument("--cosine", action='store_true', help="use cosine learning rate after swa_start.")
-    parser.add_argument("--putback", action='store_true', help="use putback.")
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
@@ -238,12 +237,12 @@ def main():
 
     print(Trainer)
 
-    train_dataset = GTA5DataSet(args.data_dir, args.data_list, max_iters=None,
+    train_dataset = DroneDataSet(args.data_dir, args.data_list, max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug)
     train_number = len(train_dataset.img_ids)
-    trainloader = data.DataLoader(train_dataset,
+    trainloader = data.DataLoader(train_dataset, 
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     trainloader_iter = enumerate(trainloader)
 
@@ -254,26 +253,19 @@ def main():
                                                      scale=False, mirror=args.random_mirror, mean=IMG_MEAN,
                                                      set=args.set, autoaug = args.autoaug_target)
     target_number = len(target_dataset.img_ids)
-    print(target_number)
     previous_weights = torch.FloatTensor( [1/target_number]*target_number )
-    targetloader = data.DataLoader(target_dataset,
-                                   batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
+    targetloader = data.DataLoader( target_dataset,
+                        batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                                    pin_memory=True, drop_last=True)
-
-    if args.putback: 
-        putback_sampler = torch.utils.data.sampler.RandomSampler(target_dataset, replacement=True)
-        targetloader = data.DataLoader(target_dataset,
-                                   batch_size=args.batch_size, sampler=putback_sampler, num_workers=args.num_workers,
-                                   pin_memory=True, drop_last=True)
-
     targetloader_iter = enumerate(targetloader)
     # init adaboost loader
     AD_targetloader = targetloader
 
-    targetloader2 = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(480, 960), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
-                           batch_size=18, shuffle=False, pin_memory=True, num_workers=4)
-    targetloader2_shuffle = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(480, 960), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=True, set='train'),
-                           batch_size=18, shuffle=True, pin_memory=True, num_workers=4) # in the paper, we use batch_size=24 with 24GB RTX 6000.
+    targetloader2 = data.DataLoader( cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set='train'),
+                           batch_size=24, shuffle=False, pin_memory=True, num_workers=4)
+
+    targetloader2_shuffle = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target, crop_size=(512, 1024), resize_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=True, set='train'),
+                           batch_size=24, shuffle=True, pin_memory=True, num_workers=4)
 
     # set up tensor board
     if args.tensorboard:
@@ -320,7 +312,6 @@ def main():
 
             # train with source
 
-            # Here I change the iterator with restart
             try:
                 _, batch = trainloader_iter.__next__()
             except:
@@ -357,7 +348,7 @@ def main():
                     Trainer.gen_opt.second_step(zero_grad=True)
                 else:
                     Trainer.gen_opt.step()
-                
+                    
                 loss_seg_value1 += loss_seg1.item() / args.iter_size
                 loss_seg_value2 += loss_seg2.item() / args.iter_size
                 loss_adv_target_value1 += loss_adv_target1 / args.iter_size
@@ -415,10 +406,10 @@ def main():
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
             torch.save(Trainer.G.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
-            #torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
-            #torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
+            torch.save(Trainer.D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
+            torch.save(Trainer.D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
             # update model every 5000 iteration, saving moving average model
-                
+
         if i_iter % args.swa_every == 0 and i_iter >= swa_start:
             if args.swa:
                 Trainer.swa_model.cuda()
