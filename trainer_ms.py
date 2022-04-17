@@ -11,6 +11,7 @@ import torch.nn.init as init
 import tqdm
 import copy
 import numpy as np
+from focalloss import FocalLoss
 from sam import SAM
 
 #fp16
@@ -129,6 +130,9 @@ class AD_Trainer(nn.Module):
         self.dis2_opt = optim.Adam(self.D2.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
 
         self.seg_loss = nn.CrossEntropyLoss(ignore_index=255)
+        self.focal = args.focal
+        if args.focal:
+            self.seg_loss = FocalLoss(ignore_index=255)
         self.kl_loss = nn.KLDivLoss(size_average=False)
         self.sm = torch.nn.Softmax(dim = 1)
         self.log_sm = torch.nn.LogSoftmax(dim = 1)
@@ -170,7 +174,11 @@ class AD_Trainer(nn.Module):
             self.often_weight = 0.9 * self.often_weight + 0.1 * often 
             self.class_weight = weight * self.often_weight
             print(self.class_weight)
-            return nn.CrossEntropyLoss(weight = self.class_weight, ignore_index=255)
+            if self.focal:
+                print('Using Focal loss')
+                return FocalLoss(weight = self.class_weight, ignore_index=255)
+            else:
+                return nn.CrossEntropyLoss(weight = self.class_weight, ignore_index=255)
 
     def update_label(self, labels, prediction):
             criterion = nn.CrossEntropyLoss(weight = self.class_weight, ignore_index=255, reduction = 'none')
