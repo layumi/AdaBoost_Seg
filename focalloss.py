@@ -10,7 +10,7 @@ class FocalLoss(nn.Module):
         self.weight = weight
         self.gamma = gamma
         self.reduction = reduction
-        self.ignore_idex = 255
+        self.ignore_index = ignore_index
         
     def forward(self, input_tensor, target_tensor):
         log_prob = F.log_softmax(input_tensor, dim=-1)
