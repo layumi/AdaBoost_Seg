@@ -346,7 +346,7 @@ def main():
                     trainloader_iter = enumerate(trainloader)
                     _, batch = trainloader_iter.__next__()
             else: # SYNTHIA
-                 try:
+                try:
                     _, batch = trainloader_iter2.__next__()
                 except:
                     trainloader_iter2 = enumerate(trainloader2)
