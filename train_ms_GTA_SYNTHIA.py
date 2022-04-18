@@ -339,7 +339,7 @@ def main():
             # Here I change the iterator with restart
             ####### two dataset in turn for optimization #####
 
-            if sub_i % 2 = 0:
+            if sub_i % 2 == 0:
                 try: # GTA5
                     _, batch = trainloader_iter.__next__()
                 except:
