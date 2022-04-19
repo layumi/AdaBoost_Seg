@@ -131,8 +131,9 @@ class AD_Trainer(nn.Module):
 
         self.seg_loss = nn.CrossEntropyLoss(ignore_index=255)
         self.focal = args.focal
+        self.gamma = args.gamma
         if args.focal:
-            self.seg_loss = FocalLoss(ignore_index=255)
+            self.seg_loss = FocalLoss(ignore_index=255, gamma = self.gamma)
         self.kl_loss = nn.KLDivLoss(size_average=False)
         self.sm = torch.nn.Softmax(dim = 1)
         self.log_sm = torch.nn.LogSoftmax(dim = 1)
@@ -176,7 +177,7 @@ class AD_Trainer(nn.Module):
             print(self.class_weight)
             if self.focal:
                 print('Using Focal loss')
-                return FocalLoss(weight = self.class_weight, ignore_index=255)
+                return FocalLoss(weight = self.class_weight, ignore_index=255, gamma = self.gamma)
             else:
                 return nn.CrossEntropyLoss(weight = self.class_weight, ignore_index=255)
 
