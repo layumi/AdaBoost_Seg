@@ -182,6 +182,7 @@ def get_arguments():
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
     parser.add_argument("--adaboost", action='store_true', help="enable adaboost.")
     parser.add_argument("--focal", action='store_true', help="enable focal loss.")
+    parser.add_argument("--gamma", type=float, default=2.0, help = 'gamma for focal loss')
     parser.add_argument("--adatype", type=str, default='variance', choices=['variance','entropy'], help="adaboost type." )
     parser.add_argument("--sam", action='store_true', help="enable sam.")
     parser.add_argument("--sync_bn", action='store_true', help="sync batch normalization.")
@@ -242,24 +243,24 @@ def main():
     print(Trainer)
 
     ########### 1. GTA5 DataSet ################
-    train_dataset = GTA5DataSet(args.data_dir, args.data_list, max_iters=None,
+    train_dataset = GTA5DataSet('./data/GTA5', './dataset/gta5_list/train.txt', max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug)
     train_number = len(train_dataset.img_ids)
     trainloader = data.DataLoader(train_dataset,
-        batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+        batch_size=args.batch_size//2, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     trainloader_iter = enumerate(trainloader)
 
 
     ########### 2. SYNTHIA DataSet #############
-    train_dataset2 = SynthiaDataSet(args.data_dir, args.data_list, max_iters=None,
+    train_dataset2 = SynthiaDataSet('./data/synthia', './dataset/synthia_list/train.txt', max_iters=None,
                     resize_size=args.input_size,
                     crop_size=args.crop_size,
                     scale=True, mirror=True, mean=IMG_MEAN, autoaug = args.autoaug)
     train_number2 = len(train_dataset2.img_ids)
     trainloader2 = data.DataLoader(train_dataset2,
-        batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+        batch_size=args.batch_size//2, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     trainloader_iter2 = enumerate(trainloader2)
 
 
@@ -339,18 +340,24 @@ def main():
             # Here I change the iterator with restart
             ####### two dataset in turn for optimization #####
 
-            if sub_i % 2 == 0:
-                try: # GTA5
-                    _, batch = trainloader_iter.__next__()
-                except:
-                    trainloader_iter = enumerate(trainloader)
-                    _, batch = trainloader_iter.__next__()
-            else: # SYNTHIA
-                try:
-                    _, batch = trainloader_iter2.__next__()
-                except:
-                    trainloader_iter2 = enumerate(trainloader2)
-                    _, batch = trainloader_iter2.__next__()
+            try: # GTA5
+                _, batch = trainloader_iter.__next__()
+            except:
+                trainloader_iter = enumerate(trainloader)
+                _, batch = trainloader_iter.__next__()
+            images, labels, _, _ = batch
+            # SYNTHIA
+            try:
+                _, batch2 = trainloader_iter2.__next__()
+            except:
+                trainloader_iter2 = enumerate(trainloader2)
+                _, batch2 = trainloader_iter2.__next__()
+            images2, labels2, _, _ = batch2
+
+            # concat
+            images = torch.cat( (images, images2), dim=0 )
+            labels = torch.cat( (labels, labels2), dim=0 )
+
 
             try:
                 _, batch_t = targetloader_iter.__next__()
@@ -361,7 +368,6 @@ def main():
                     targetloader_iter = enumerate(targetloader)
                 _, batch_t = targetloader_iter.__next__()
 
-            images, labels, _, _ = batch
             images = images.cuda().detach()
             labels = labels.long().cuda().detach()
             images_t, labels_t, _, _ = batch_t
