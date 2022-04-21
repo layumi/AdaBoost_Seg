@@ -13,7 +13,7 @@ class FocalLoss(nn.Module):
         self.ignore_index = ignore_index
         
     def forward(self, input_tensor, target_tensor):
-        log_prob = F.log_softmax(input_tensor, dim=-1)
+        log_prob = F.log_softmax(input_tensor, dim=1)
         prob = torch.exp(log_prob)
         return F.nll_loss(
             ((1 - prob) ** self.gamma) * log_prob, 
