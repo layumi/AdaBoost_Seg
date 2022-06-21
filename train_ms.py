@@ -176,6 +176,7 @@ def get_arguments():
     parser.add_argument("--use-blur", action='store_true', help="use blur pooling.")
     parser.add_argument("--cosine", action='store_true', help="use cosine learning rate after swa_start.")
     parser.add_argument("--putback", action='store_true', help="use putback.")
+    parser.add_argument("--random-sampling", action='store_true', help="use random sampling.")
     parser.add_argument("--only-hard-label",type=float, default=0,  
                          help="class balance.")
     parser.add_argument("--train_bn", action='store_true', help="train batch normalization.")
@@ -444,6 +445,15 @@ def main():
                 sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
                 AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
                 targetloader_iter = enumerate(AD_targetloader)
+
+            if args.random_sampling:
+                print(torch.sum(weights))
+                weights = torch.FloatTensor(torch.rand(previous_weights.shape))
+                weights /= torch.sum(weights)
+                sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+                AD_targetloader = data.DataLoader(target_dataset, sampler = sampler, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+                targetloader_iter = enumerate(AD_targetloader)
+
 
     if args.tensorboard:
         writer.close()
