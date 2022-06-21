@@ -447,7 +447,6 @@ def main():
                 targetloader_iter = enumerate(AD_targetloader)
 
             if args.random_sampling:
-                print(torch.sum(weights))
                 weights = torch.FloatTensor(torch.rand(previous_weights.shape))
                 weights /= torch.sum(weights)
                 sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
