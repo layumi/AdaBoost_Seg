@@ -7,8 +7,18 @@
 In this repo, we provide the code for the paper [Adaptive Boosting for Domain Adaptation: Towards Robust Predictions in Scene Segmentation](https://arxiv.org/abs/2103.15685).
 
 ## News 
+- Will more “hard” samples to have a negative effect? How to simulate? (https://github.com/layumi/AdaBoost_Seg/blob/master/Toy_Example.md)
 - Evaluation on semi-supervised Cifar10 (https://github.com/layumi/Cifar10-Adaboost)  
 - A brief illustration of AdaBoost in English at [[Here]](https://cmp.felk.cvut.cz/~sochmj1/adaboost_talk.pdf) and in Chinese [[中文介绍]](https://zhuanlan.zhihu.com/p/368077560)
+
+## Tips
+1. When adopting this method to other fields, we suggest to tune the sampling weight with temperature to suit your task and dataset. In this paper, we do not change it, and keep it as 1. 
+
+2. In our recent experiment, we can achieve a better performance 49.72% (MRNet+Ours) than the number reported in the paper. We think that when Aggrregated Model converges, the adboost sampler updates slowly, which also compromises the performance. If we give more weights to recent snapshots for updating sampler, it works better. 
+
+```bash
+python train_ms.py --snapshot-dir ./snapshots/ReRUN_Adaboost_SWA_SE_GN_batchsize2_1024x512_pp_ms_me0_classbalance7_kl0.1_lr2_drop0.1_seg0.5_swa0_recent  --drop 0.1 --warm-up 5000 --batch-size 2 --learning-rate 2e-4 --crop-size 1024,512 --lambda-seg 0.5  --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001   --lambda-me-target 0  --lambda-kl-target 0.1  --norm-style gn  --class-balance  --only-hard-label 80  --max-value 7  --gpu-ids 0  --often-balance  --use-se  --swa  --swa_start 0 --adaboost --recent
+```   
 
 ## Table of contents
 * [Prerequisites](#prerequisites)
