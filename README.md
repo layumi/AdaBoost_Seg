@@ -159,10 +159,12 @@ python train_ms.py --snapshot-dir ./snapshots/255VGGBN_Adaboost_SWA_SE_GN_batchs
 
  ### Citation
  ```bibtex
- @inproceedings{zheng2021adaboost,
+@article{zheng2021adaboost,
    title={Adaptive Boosting for Domain Adaptation: Towards Robust Predictions in Scene Segmentation},
    author={Zheng, Zhedong and Yang, Yi},
-   booktitle={arXiv},
+   journal={IEEE Transactions on Image Processing},
+   doi={10.1109/TIP.2022.3195642},
+   note={\mbox{doi}:\url{10.1109/TIP.2022.3195642}},
    year={2021}
  }
  ```
