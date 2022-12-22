@@ -6,6 +6,8 @@
 ![](pipeline.png)
 In this repo, we provide the code for the paper [Adaptive Boosting for Domain Adaptation: Towards Robust Predictions in Scene Segmentation](https://arxiv.org/abs/2103.15685).
 
+[[Paper]](https://zdzheng.xyz/files/TIP_Adaboost.pdf) [[中文解读]](https://zhuanlan.zhihu.com/p/593571554)
+
 ## News 
 - Will more “hard” samples to have a negative effect? How to simulate? (https://github.com/layumi/AdaBoost_Seg/blob/master/Toy_Example.md)
 - Evaluation on semi-supervised Cifar10 (https://github.com/layumi/Cifar10-Adaboost)  
