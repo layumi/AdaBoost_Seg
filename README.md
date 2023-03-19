@@ -8,6 +8,17 @@ In this repo, we provide the code for the paper [Adaptive Boosting for Domain Ad
 
 [[Paper]](https://zdzheng.xyz/files/TIP_Adaboost.pdf) [[中文解读]](https://zhuanlan.zhihu.com/p/593571554)
 
+## Initial Model
+The original DeepLab link of ucmerced is failed. Please use the following link.
+https://drive.google.com/file/d/1BMTTMCNkV98pjZh_rU0Pp47zeVqF3MEc/view?usp=share_link 
+
+or use 
+```
+pip install gdown
+pip install --upgrade gdown
+gdown 1BMTTMCNkV98pjZh_rU0Pp47zeVqF3MEc
+```
+
 ## News 
 - Will more “hard” samples to have a negative effect? How to simulate? (https://github.com/layumi/AdaBoost_Seg/blob/master/Toy_Example.md)
 - Evaluation on semi-supervised Cifar10 (https://github.com/layumi/Cifar10-Adaboost)  
