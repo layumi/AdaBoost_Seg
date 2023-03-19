@@ -10,7 +10,10 @@ In this repo, we provide the code for the paper [Adaptive Boosting for Domain Ad
 
 ## Initial Model
 The original DeepLab link of ucmerced is failed. Please use the following link.
-https://drive.google.com/file/d/1BMTTMCNkV98pjZh_rU0Pp47zeVqF3MEc/view?usp=share_link 
+
+[Google Drive] https://drive.google.com/file/d/1BMTTMCNkV98pjZh_rU0Pp47zeVqF3MEc/view?usp=share_link 
+
+[One Drive] https://1drv.ms/u/s!Avx-MJllNj5b3SqR7yurCxTgIUOK?e=A1dq3m
 
 or use 
 ```
